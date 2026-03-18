@@ -24,12 +24,16 @@ Create `src/components/public/chat-widget.tsx`:
 
 A collapsible chat widget pinned to the bottom-right of the public changelog page.
 
-**UI**:
-- Collapsed state: a small floating button with a chat icon (bottom-right corner)
-- Expanded state: a chat panel (~400px wide, ~500px tall) with:
-  - Header: "Ask about changes" + close button
-  - Message list: alternating user/assistant bubbles
-  - Input field + send button at the bottom
+**UI** (see design screens 06 and 07):
+
+- **Collapsed state**: Green-to-blue gradient FAB pill (`#10B981` → `#3B82F6`, 135°) with `message-circle` icon + "Ask about changes" text. Green glow shadow. On mobile: circle with icon only (56px).
+- **Expanded state**: A floating chat panel (420px wide, ~520px tall) with:
+  - `$bg-surface` background, 12px corner radius, 1px `$border` stroke, large drop shadow
+  - Header: green `message-circle` icon + "Ask about changes" text + close X button, separated by bottom border
+  - Message list with scroll:
+    - User messages: right-aligned, green (`$accent-green`) rounded bubbles with dark green text (`#022C22`). Asymmetric corner radius (top-right sharp).
+    - AI messages: left-aligned with gradient avatar (24px circle, sparkles icon), dark bubble (`$bg-page`) with 1px border. Asymmetric corner radius (bottom-left sharp).
+  - Input bar at bottom: bordered separator, input field with "Ask a question..." placeholder, green send button (32px square, `arrow-up` icon)
 - Smooth open/close animation (scale + opacity, 200ms)
 
 **Backend**:
@@ -85,7 +89,7 @@ export function ChatWidget() {
 }
 ```
 
-**Design**: The widget should feel lightweight — not like a full support chat. Minimal styling, fast to open, fast to respond. Use the same design language as the rest of the public page.
+**Design**: The widget should feel lightweight — not like a full support chat. Uses the same dark surface treatment as the rest of the app. The gradient FAB and AI avatar tie it to the Chamelelog brand. Fast to open, fast to respond.
 
 ---
 

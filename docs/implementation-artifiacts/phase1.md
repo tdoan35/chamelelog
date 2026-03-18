@@ -260,19 +260,45 @@ export async function getGitHubToken(userId: string): Promise<string | null> {
 Create the dashboard layout at `src/app/(dashboard)/layout.tsx`:
 
 - Sidebar with:
-  - App logo/name at top ("Chamelelog")
-  - Navigation: "Changelogs" (list), "New" (generate new), "Settings" (placeholder)
-  - User avatar + name at bottom with sign-out option
-- Main content area to the right of the sidebar
-- Responsive: sidebar collapses to a top bar on mobile
+  - App logo at top: gradient `scan-eye` Lucide icon (green→blue, 135°) + "Chamelelog" in DM Sans 700
+  - Sidebar collapse/expand icon button (Lucide `panel-left-close`) top-right of logo row
+  - Navigation with Lucide icons: `list` "Changelogs", `circle-plus` "Generate new", `settings` "Settings"
+  - Active nav item has `#111111` background (dark) / `$bg-surface` (light), bold text
+  - Bottom section: three-icon theme switcher (sun/monitor/moon segmented control), then user avatar + name
+  - Theme switcher: icon-only buttons in a pill container. Active mode gets highlighted background. Supports light/dark/system
+- Main content area to the right of the sidebar, separated by a 1px border
+- Responsive: sidebar collapses to a top bar with hamburger menu on mobile
 
-The sidebar should be clean and minimal — no icons needed, just well-spaced text links. Use a subtle border-right to separate from content. Background: white (light) / zinc-950 (dark).
+Sidebar uses a distinctly darker background (`#070707`) than the page (`#0A0A0A`) in dark mode to create depth separation. In light mode, sidebar is white with `$bg-surface` nav highlights.
+
+**Design system — refer to `docs/design/chamelelog-design.pen` for the finalized screens.**
+
+**Typography:**
+- Display/titles: DM Sans (700-800 weight, tight letter-spacing)
+- Technical metadata: JetBrains Mono (repo names, dates, commit counts, version numbers — 11px)
+- Body/UI: Inter (nav items, descriptions, buttons — 12-14px)
+
+**Color palette (dark-first, Greptile-inspired):**
+- Backgrounds: `#0A0A0A` (page), `#141414` (surface/cards), `#070707` (sidebar)
+- Borders: `#262626` (primary), `#1C1C1C` (muted)
+- Text: `#F5F5F5` (primary), `#A3A3A3` (secondary), `#6B6B6B` (tertiary)
+- Primary accent: `#10B981` (emerald green) — buttons, active states, CTA
+- Button text on green: `#022C22` (dark green)
+- Category accents: `#10B981` (features), `#3B82F6` (improvements), `#F59E0B` (fixes), `#EF4444` (breaking)
+- Category card tints: very subtle semi-transparent category color backgrounds (e.g. `#10B98108`)
+- Green glow on primary buttons: `box-shadow: 0 0 16px #10B98130`
+
+**Light mode** mirrors the same structure with inverted neutrals:
+- Backgrounds: `#FFFFFF` (page), `#FAFAFA` (surface), white sidebar
+- Borders: `#E4E4E7` / `#F4F4F5`
+- Text: `#18181B` / `#71717A` / `#A1A1AA`
+- Same accent colors work in both modes
 
 Create the dashboard home page at `src/app/(dashboard)/page.tsx`:
 
-- Page title: "Changelogs"
-- If the user has no projects connected, show an empty state: "Connect a GitHub repository to get started" with a "Connect repository" button
-- If the user has projects but no changelogs, show: "No changelogs yet. Generate your first one." with a "Generate changelog" button
+- Page title: "Changelogs" in DM Sans 700
+- If the user has no projects connected, show an empty state: icon in a bordered container, "No changelogs yet" heading, "Connect a GitHub repository and generate your first changelog from your Git commits." description, green "Connect repository" CTA button with GitHub icon and glow, plus an "or generate from a public repo" text link
+- If the user has projects but no changelogs, show similar empty state with "Generate changelog" CTA
 - If changelogs exist, render a `<ChangelogList />` component (can be a placeholder for now — will be fleshed out in Phase 3)
 
 ### 1.5 — Connect repository flow
@@ -282,13 +308,15 @@ Create `src/app/api/projects/route.ts`:
 - `GET` — Returns all projects for the current user
 - `POST` — Connects a new repo. Body: `{ repoOwner: string, repoName: string }`. Validate the repo exists via GitHub API before saving.
 
-On the dashboard, add a "Connect repository" dialog:
-- Input field for repo URL or `owner/repo` format
-- Parse and validate the input
+On the dashboard, add a "Connect repository" modal dialog (see design screen 10):
+- Modal with header ("Connect repository" + close X button), body, and footer
+- Search input with search icon: "Search repositories..."
+- List of user's GitHub repos fetched via API, each showing `git-branch` icon + `owner/repo` name
+- Selected repo highlighted in green with check icon
+- Footer: "Cancel" secondary button + "Connect" green primary button with glow
+- Use the GitHub API to list the user's repositories — this is the primary UX (not a text input fallback)
 - On submit, POST to `/api/projects`
 - After success, redirect to the generate page
-
-Alternatively, use the GitHub API to list the user's repositories and let them pick from a dropdown. This is a better UX but more work — use the dropdown approach if time permits, fall back to the text input.
 
 ### 1.6 — Environment and configuration
 

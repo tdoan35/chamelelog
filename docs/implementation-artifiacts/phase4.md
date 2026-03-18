@@ -16,80 +16,71 @@ Create `src/app/(public)/changelog/page.tsx`:
 
 This is a server component that fetches all published changelogs and renders them in a clean, scrollable feed. No authentication required.
 
-**Layout** (max-w-2xl, centered):
+**Layout** — two-panel with project sidebar (see design screens 06, 06L, 09):
 
-1. **Header**
-   - Project name or custom title (e.g., "Changelog" or the repo name)
-   - Subtitle: "The latest updates and improvements"
-   - RSS feed icon/link (subtle, in the header area)
-   - Clean, large typography
+**Left sidebar** (280px, `#070707` dark / `$bg-surface` light):
+1. **Project info** at top:
+   - Project avatar (rounded square) + repo name (`owner/repo`) in 15px semibold
+   - Sidebar collapse button (Lucide `panel-left-close`) on the right of the logo row
+   - Project description in 13px secondary text
+2. **Links section**:
+   - `github` icon + "View repository"
+   - `rss` icon + "RSS Feed"
+   - `braces` icon + "JSON Feed"
+3. **Category filter** (replaces horizontal pills):
+   - "FILTER" label in 11px uppercase monospace with letter-spacing
+   - Vertical list: "All changes" (active, highlighted bg), then each category with a colored dot: green "Features", blue "Improvements", amber "Fixes", red "Breaking"
+   - Active filter has `#1A1A1A` bg (dark) / `$bg-page` (light)
+4. **Bottom section**:
+   - Three-icon theme switcher (sun/monitor/moon) matching dashboard pattern
+   - "✨ Powered by Chamelelog" footer text in 11px tertiary
 
-2. **Category filter**
-   - Horizontal pills at the top: "All", "Features", "Improvements", "Fixes", "Breaking"
-   - "All" is active by default
-   - Clicking a category filters the feed to only show entries in that category
-   - Use URL search params for filtering (`?category=features`) so it's shareable
-   - Filter is implemented server-side for SSR
+**Main content area** (scrollable, 40px padding):
+1. **Page header**:
+   - "Changelog" in DM Sans 800 28px
+   - Subtitle: "The latest updates and improvements to owner/repo."
 
-3. **Changelog entries**
-   - Entries are grouped by date (not by individual changelog)
-   - Each date group has a prominent date header: "March 17, 2026"
-   - If a version tag exists, show it next to the date: "March 17, 2026 · v2.3.0"
-   - Under the date header, entries are grouped by category
-   - Category headers: subtle, colored label (e.g., green "New features" text)
-   - Each entry: title as the primary text, description below in muted color
-   - Entries within a category are listed as clean bullet points or cards
+2. **Timeline entries** — date groups with green dot markers:
+   - Each date group: horizontal layout with timeline column (28px, centered dot + vertical line) and content column
+   - Date header: 17px semibold + version badge in JetBrains Mono (monospace pill with subtle border)
+   - First date dot: solid `#10B981` green. Subsequent dots also green.
+   - Vertical connecting line: 1px `$border`
+   - Timeline dot vertically centered with date header text (use ~6px top padding on timeline column)
 
-4. **Timeline aesthetic**
-   - A subtle vertical line on the left connecting date groups (like a timeline)
-   - Date markers sit on the line
-   - Content sits to the right of the line
-   - On mobile: the timeline collapses, entries stack vertically without the line
+3. **Entry cards** within each date group:
+   - Category header: colored dot (8px) + category label in colored bold 13px text (e.g., green "New features")
+   - Each entry is a card with: colored left border (3px), category-tinted background fill (e.g., `#10B98108` for features, `#F59E0B08` for fixes, `#3B82F608` for improvements), `rounded-lg`
+   - Card content: title (14px medium) + description (13px secondary, 1.5 line-height)
 
-**Design reference**: Look at Stripe's changelog (https://docs.stripe.com/changelog) for the timeline feel, but simpler. Our version should be lighter — no sidebar navigation, no search, just a clean vertical feed.
+4. **Mobile** (see design screen 09, 390px):
+   - Sidebar collapses to a top bar: gradient logo icon + "Chamelelog" + hamburger menu icon
+   - No timeline line — entries stack vertically with date headers
+   - Filter pills become horizontal scrollable row
+   - Floating chat FAB (56px circle, gradient fill) in bottom-right
 
-**Example rendered structure**:
-```
-March 17, 2026 · v2.3.0
-─────────────────────────
-
-  ✨ New features
-
-    Added OAuth 2.0 support
-    Users can now sign in with Google, GitHub, or email magic links.
-
-    Added webhook event filtering
-    Configure which events trigger your webhook endpoints.
-
-  🐛 Bug fixes
-
-    Fixed session timeout on mobile browsers
-    Sessions now persist correctly across app backgrounding on iOS and Android.
-
-
-March 10, 2026
-─────────────────────────
-
-  💪 Improvements
-
-    Improved API response times by 40%
-    Optimized database queries for the /users and /projects endpoints.
-```
+5. **Chat widget FAB** (bottom-right corner):
+   - Green-to-blue gradient fill (`#10B981` → `#3B82F6`, 135°) with green glow shadow
+   - Desktop: pill shape with `message-circle` icon + "Ask about changes" text
+   - Mobile: circle with icon only
 
 ### 4.2 — Changelog entry component
 
 Create `src/components/public/changelog-entry.tsx`:
 
-A reusable component for a single changelog entry. Takes:
+A reusable component for a single changelog entry card. Takes:
 - `title: string`
 - `description?: string`
 - `category: string`
 
-Renders the title in regular weight with the optional description below in a muted style. Keep it simple — no cards, no borders, just clean typography with proper spacing.
+Renders as a card with colored left border (3px, category color), category-tinted background, rounded corners. Title in 14px medium, description in 13px secondary with 1.5 line-height.
 
 Create `src/components/public/changelog-feed.tsx`:
 
-The main feed component. Takes an array of published changelogs and renders them grouped by date with the timeline aesthetic.
+The main feed component. Takes an array of published changelogs and renders them grouped by date with the timeline aesthetic (green dots, vertical connecting line, date headers with version badges).
+
+Create `src/components/public/project-sidebar.tsx`:
+
+The left sidebar for the public changelog page. Receives project info, links, and filter state. Handles the category filter via URL search params.
 
 ### 4.3 — Category badges
 
@@ -200,26 +191,33 @@ export async function GET() {
 
 Create `src/app/(public)/layout.tsx`:
 
-A minimal layout for public pages:
-- Simple top bar with the project name on the left, and a subtle "Powered by Chamelelog" on the right
-- No sidebar
-- Centered content with max-w-2xl
-- Light/clean background (zinc-50 light, zinc-950 dark)
-- Dark mode support
+A two-panel layout for public pages:
+- Left: project sidebar (280px) with project info, links, category filter, theme switcher, and "Powered by Chamelelog" footer
+- Right: scrollable content area with page title and timeline entries
+- Sidebar separated from content by a 1px `$border` divider
+- Dark mode by default, with theme switcher (sun/monitor/moon) in sidebar
+- On mobile (<768px): sidebar collapses to a top bar with hamburger, content fills full width
 
 ### 4.7 — Landing / sign-in page
 
-Create or update `src/app/page.tsx` (the root page):
+Create or update `src/app/page.tsx` (see design screens 01, 01L):
 
-For unauthenticated users, this is a simple landing/sign-in page:
-- Headline: "Chamelelog — AI-powered changelogs in seconds"
-- Subtitle: "Generate beautiful changelogs from your Git commits. Adapts to any audience, just like a chameleon."
-- "Sign in with GitHub" button
-- Link to the public changelog page: "View example changelog →"
+For unauthenticated users, this is a visually rich landing page:
+
+**Background layers** (bottom to top):
+1. `$bg-page` solid fill
+2. Grid lines: 60px spacing, subtle color (`#1A1A1A` dark / `#F0F0F0` light)
+3. Mesh gradient overlay: green/teal/blue (`#10B981`, `#0D9488`, `#3B82F6`, `#059669`, `#6366F1`, `#14B8A6`) at 15% opacity (dark) / 12% (light) — creates the chameleon color-shift effect
+4. Radial vignette: transparent center fading to `$bg-page` at edges
+
+**Content** (centered vertically):
+- Gradient logo icon (`scan-eye`) + "Chamelelog" in DM Sans 700
+- Headline: "AI-powered **changelogs** in seconds" — "changelogs" has a green→blue gradient fill (`#10B981` → `#3B82F6`), rest in `$text-primary`. DM Sans 800, 48px, -1px letter-spacing
+- Subtitle: "Generate beautiful, categorized changelogs from your Git commits. Published in one click." in 16px secondary
+- "Sign in with GitHub" green button with GitHub icon, green glow shadow
+- "View example changelog →" text link in secondary color
 
 For authenticated users, redirect to the dashboard.
-
-Keep this page very simple — it's not the focus of the project, just a clean entry point.
 
 ## Acceptance criteria
 

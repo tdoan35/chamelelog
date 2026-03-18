@@ -52,22 +52,23 @@ Create `src/components/dashboard/streaming-output.tsx`:
 
 When the user clicks "Generate", the form transitions (with a smooth animation) to the output view. This component connects to the SSE stream and renders entries as they arrive.
 
-**Layout during streaming**:
+**Layout during streaming** (see design screen 04):
 
 1. **Status bar** at the top
-   - Shows the current pipeline stage: "Fetching commits..." → "Analyzing 47 commits..." → "Writing changelog entries..."
-   - Subtle progress indication (not a progress bar — just the text updating with a gentle fade transition)
-   - Once complete: "Generated 12 entries from 47 commits"
+   - Green dot indicator + status text in JetBrains Mono: "Writing changelog entries..."
+   - Once complete: "Generated 8 entries from 47 commits" in DM Sans 600
 
 2. **Entries appearing in real time**
    - As `entry` events arrive, new changelog entry cards animate in (fade + slide up, 200ms)
    - Entries are grouped by category with category headers
-   - Category order: Breaking Changes → New Features → Improvements → Bug Fixes
-   - Each entry shows: category badge, title, description (if present)
+   - Category headers: 3px colored accent bar (vertical) + category label in bold
+   - Category order: New Features → Bug Fixes (Breaking Changes → Improvements as applicable)
+   - Each entry is a bordered card with title + description, subtle `$bg-page` fill
+   - Entry cards use 1px `$border` stroke with `rounded-lg`
 
 3. **After stream completes**
-   - "Edit & Review" button appears, navigating to the edit page
-   - "Generate again" secondary button to re-run with different settings
+   - "Edit & Review" primary button (green with glow, pencil icon) + "Generate again" secondary outlined button
+   - Both buttons appear in a horizontal row
 
 **Client-side SSE connection**:
 
@@ -140,30 +141,32 @@ Create `src/app/(dashboard)/changelogs/[id]/page.tsx`:
 
 This page loads a saved changelog (draft or published) and lets the developer edit it before publishing.
 
-**Layout** (max-w-3xl, centered):
+**Layout** (see design screen 05, full-width content area):
 
-1. **Header bar**
-   - Title field (editable inline, large text)
-   - Status badge: "Draft" (amber) or "Published" (green)
-   - Version field (optional, editable): e.g., "v2.3.0"
-   - Metadata: "47 commits · Mar 10 – Mar 17, 2026"
-   - Actions: "Publish" primary button, "Export markdown" secondary, "Delete" danger (in dropdown)
+1. **Header bar** (horizontal, space-between)
+   - Left side: editable title in DM Sans 700 22px + status badge ("Draft" amber pill or "Published" green pill)
+   - Below title: metadata in JetBrains Mono 11px: "47 commits · Mar 10 – Mar 17, 2026 · acme/web-app"
+   - Right side: "✓ Saved" indicator (green check + text), "Export" outlined button, "Publish" green primary button with glow
+   - Separated from content by a subtle `$border-muted` horizontal rule
 
 2. **Category sections**
-   - Each category is a collapsible section with a colored left border
-   - Category header: emoji + name + entry count badge
-   - Colors: Breaking = red, Features = green, Improvements = blue, Fixes = amber
+   - Each category has: 3px colored accent bar + category name (15px medium) + count badge (pill with number) + right-aligned "+ Add entry" link
+   - Colors: Features = `#10B981` green, Fixes = `#F59E0B` amber, Improvements = `#3B82F6` blue, Breaking = `#EF4444` red
 
 3. **Entry cards** (within each category)
-   - Each entry is an editable card
-   - Title: editable text input (or contentEditable for a cleaner feel)
-   - Description: editable textarea (auto-grows)
+   - Each entry is a bordered card with a colored left border (3px, matching category)
+   - Card has `rounded-lg`, 1px `$border` stroke, clipped to show the left accent bar
+   - Title: editable text (14px medium)
+   - Description: editable text (13px, secondary color, 1.5 line-height)
    - Actions on each card (shown on hover): "Delete", "Move to..." (dropdown to change category)
-   - Drag-and-drop reordering within a category (use @dnd-kit/core if time permits, otherwise just move up/down buttons)
 
 4. **Add entry**
-   - "Add entry" button at the bottom of each category
+   - "+ Add entry" text link at the right side of each category header
    - Opens an inline form to type a manual entry
+
+5. **Toast notification** (see design screen 11)
+   - On publish, show a success toast in the bottom-right: green check icon in a pill, "Changelog published" title, "Release v2.3.0 is now live on your public page." description, dismiss X button
+   - Toast has `$bg-surface` background, border, and drop shadow
 
 **API routes for editing**:
 
@@ -178,23 +181,21 @@ Update `src/app/(dashboard)/page.tsx`:
 
 The main dashboard view showing all changelogs.
 
-**Layout**:
+**Layout** (see design screens 02 and 08):
 
-1. **Page header**: "Changelogs" title + "Generate new" button (top right)
+1. **Page header**: "Changelogs" in DM Sans 700 + "Generate new" green button with plus icon (top right)
 
-2. **Filter tabs**: "All", "Drafts", "Published" — simple text tabs
+2. **Filter tabs**: "All" (active, `$bg-surface` background), "Drafts", "Published" — pill-shaped text tabs in a horizontal row
 
-3. **Changelog cards** in a vertical list:
-   - Title (clickable, navigates to edit page)
-   - Status badge
-   - Version (if set)
-   - Date range: "Mar 10 – Mar 17, 2026"
-   - Repo: "owner/repo"
-   - Commit count: "47 commits"
-   - Timestamp: "Created 2 hours ago"
+3. **Changelog cards** in a vertical list (12px gap):
+   - Each card: 1px `$border` stroke, `rounded-lg`, 16px padding
+   - Top row (space-between): Title (15px medium) on left, status badge on right
+   - Status badges: "Published" (green-bg pill), "Draft" (amber-bg pill), "Pending review" (blue-bg pill)
+   - Bottom row: metadata in JetBrains Mono 11px — `owner/repo · date range · commit count`, separated by dots
+   - First card has subtle green glow hover effect to signal interactivity
 
-4. **Empty states**:
-   - No changelogs at all: "No changelogs yet. Generate your first one." + CTA button
+4. **Empty states** (see design screen 08):
+   - Centered vertically: file icon in a 56px bordered container, "No changelogs yet" heading in DM Sans 600, descriptive paragraph, green "Connect repository" CTA button with GitHub icon and glow, plus "or generate from a public repo" link
    - Filter returns nothing: "No drafts found." (no CTA needed)
 
 Cards should use subtle hover effects and click to navigate. Do NOT use a table layout — cards feel more modern and are easier to scan.
@@ -222,17 +223,26 @@ Use a simple event listener in the dashboard layout — no library needed.
 
 ## Design reference
 
-The overall aesthetic should channel:
-- **Linear**: Clean sidebar, monochrome palette, purposeful use of color only for status
-- **Vercel Dashboard**: Crisp typography, generous whitespace, data-dense but not cluttered
-- **Notion**: Inline editing, content-first layout, minimal chrome
+Refer to `docs/design/chamelelog-design.pen` for all finalized screens. The design is Greptile-inspired with a chameleon branding motif.
 
-Color palette (Tailwind):
-- Primary actions: zinc-900 (dark button on light bg) / white (on dark bg)
-- Category accents: green-500 (features), blue-500 (improvements), amber-500 (fixes), red-500 (breaking)
-- Backgrounds: white / zinc-50 for cards on light, zinc-950 / zinc-900 on dark
-- Borders: zinc-200 (light) / zinc-800 (dark)
-- Text: zinc-900 primary, zinc-500 secondary, zinc-400 tertiary
+**Aesthetic**: Dark-first, developer-tool feel inspired by Linear, Vercel, and Greptile. Clean sidebar with depth separation, emerald green accent (`#10B981`), gradient logo and CTA elements.
+
+**Typography** (three-font system):
+- **DM Sans** (700-800): Page titles, brand name, section headers — tight letter-spacing for display impact
+- **JetBrains Mono** (11px): Repo names, date ranges, commit counts, version badges — technical metadata
+- **Inter** (12-14px): Body text, nav items, descriptions, buttons — functional UI
+
+**Color palette** — see Phase 1 section 1.4 for full dark/light mode values. Key points:
+- Primary accent: `#10B981` emerald green with `#10B98130` glow shadow on CTA buttons
+- Category colors: green (features), blue (improvements), amber (fixes), red (breaking)
+- Category card backgrounds: very subtle tinted fills (e.g. `#10B98108` for features)
+- Dark sidebar: `#070707` (darker than page `#0A0A0A`) for depth
+- Green-to-blue gradient (`#10B981` → `#3B82F6`, 135°) on: logo icon, chat FAB, hero "changelogs" text
+
+**Interactive patterns**:
+- First card in list has subtle green glow on hover to show interactivity
+- Green glow shadow on all primary action buttons
+- Toast notifications in bottom-right for feedback (see screen 11)
 
 ## Acceptance criteria
 

@@ -343,116 +343,99 @@ No global state library. State lives where it's used:
 ---
  
 ## Design system
- 
+
+> **Finalized designs**: See `docs/design/chamelelog-design.pen` for all 12 screens including dark/light modes, mobile viewport, and all interactive states (chat widget, connect repo dialog, toast, empty state).
+
 ### Philosophy
- 
-Minimal, clean, developer-oriented. The design should feel like a tool built by someone who uses Linear, Vercel, and Notion daily. Restraint is the goal — every visual element should earn its place.
+
+Dark-first, developer-oriented, Greptile-inspired with a chameleon branding motif. The design channels Linear's clean sidebar, Vercel's crisp typography, and Greptile's dark-mode developer-tool aesthetic. A green-to-blue gradient thread runs through the brand: logo icon, hero text, chat FAB, and AI avatar. Restraint is still the goal — every visual element should earn its place.
  
 ### Color palette
- 
-**Neutrals** (primary palette — used for 90% of the UI):
- 
-| Token | Light | Dark | Usage |
-|---|---|---|---|
-| Background | white | zinc-950 | Page background |
-| Surface | zinc-50 | zinc-900 | Cards, sidebar |
-| Border | zinc-200 | zinc-800 | Dividers, card borders |
-| Text primary | zinc-900 | zinc-50 | Headings, body text |
-| Text secondary | zinc-500 | zinc-400 | Descriptions, metadata |
-| Text tertiary | zinc-400 | zinc-500 | Timestamps, hints |
- 
-**Category accents** (used sparingly for changelog categories):
- 
-| Category | Color | Usage |
-|---|---|---|
-| Features | green-500 / green-50 bg | Left border accent, badge |
-| Improvements | blue-500 / blue-50 bg | Left border accent, badge |
-| Fixes | amber-500 / amber-50 bg | Left border accent, badge |
-| Breaking | red-500 / red-50 bg | Left border accent, badge |
- 
-**Accents are applied as left borders on cards**, not as backgrounds. This keeps the interface calm while still providing visual grouping. The only place category colors appear as backgrounds is in small pill badges.
- 
+
+Full color system documented in Phase 1, section 1.4. Summary of key values:
+
+**Dark mode** (primary): `#0A0A0A` page, `#141414` surface, `#070707` sidebar, `#262626` borders, `#F5F5F5` / `#A3A3A3` / `#6B6B6B` text hierarchy.
+
+**Light mode**: `#FFFFFF` page, `#FAFAFA` surface, `#E4E4E7` borders, `#18181B` / `#71717A` / `#A1A1AA` text hierarchy.
+
+**Accents** (shared): `#10B981` emerald green (primary), `#3B82F6` blue (improvements), `#F59E0B` amber (fixes), `#EF4444` red (breaking). Primary buttons use `#10B981` with `#022C22` dark text and green glow shadow.
+
+**Chameleon gradient**: `linear-gradient(135deg, #10B981, #3B82F6)` — logo icon, chat FAB, hero "changelogs" text, AI avatar.
+
+**Category card tints**: Semi-transparent category fills (e.g., `#10B98108`) for subtle color association on entry cards.
+
 ### Typography
- 
-System font stack via Tailwind defaults. No custom fonts to load.
- 
-| Element | Size | Weight | Class |
-|---|---|---|---|
-| Page title | text-2xl (24px) | font-semibold (600) | `text-2xl font-semibold` |
-| Section header | text-lg (18px) | font-medium (500) | `text-lg font-medium` |
-| Card title | text-base (16px) | font-medium (500) | `text-base font-medium` |
-| Body text | text-sm (14px) | font-normal (400) | `text-sm` |
-| Metadata | text-xs (12px) | font-normal (400) | `text-xs text-zinc-500` |
-| Code / mono | text-sm (14px) | font-normal (400) | `text-sm font-mono` |
- 
+
+Three-font system:
+
+| Font | Role | Usage |
+|---|---|---|
+| **DM Sans** | Display | Page titles (700-800), brand name, section headers — tight letter-spacing |
+| **JetBrains Mono** | Technical | Repo names, dates, commit counts, version badges (11px) |
+| **Inter** | Functional | Nav, body, descriptions, buttons (12-14px) |
+
 ### Spacing
- 
-- Page padding: `px-6 py-8` (dashboard), `px-4 py-8` (public)
-- Card padding: `p-4` or `p-6`
-- Stack gap: `space-y-4` for cards, `space-y-6` for sections, `space-y-8` for page sections
-- Max content width: `max-w-2xl` (public page), `max-w-3xl` (editor), `max-w-5xl` (dashboard list)
- 
+
+- Dashboard padding: 32px vertical, 40px horizontal
+- Public page padding: 40px vertical, 60px horizontal
+- Card padding: 16px
+- Card gap: 12px, section gap: 24px
+- Sidebar width: 240px (dashboard), 280px (public)
+
 ### Component patterns
- 
-**Cards**: Subtle border (`border border-zinc-200 dark:border-zinc-800`), no shadow by default, slight hover shadow on interactive cards (`hover:shadow-sm`). Rounded corners: `rounded-lg`.
- 
-**Buttons**: Primary is solid zinc-900 on light / white on dark. Secondary is ghost/outline. Destructive is red, only in dropdown menus (never as standalone). All buttons: `rounded-md`, `text-sm`, `font-medium`.
- 
-**Badges**: Small pills for status. Draft = amber-100 text-amber-700. Published = green-100 text-green-700. Pending review = blue-100 text-blue-700. All: `rounded-full px-2 py-0.5 text-xs font-medium`.
- 
-**Empty states**: Centered vertically in the content area. An icon or subtle illustration (optional), a heading ("No changelogs yet"), a description ("Generate your first changelog from your Git commits"), and a primary CTA button. Keep it warm and encouraging, not clinical.
- 
-**Loading states**: Skeleton loaders that match the shape of the content they replace. Use Tailwind's `animate-pulse` on zinc-200 rectangles. Never use spinners. During AI generation, show streaming output instead of any loading state.
- 
+
+**Cards**: 1px border, `rounded-lg`, no shadow by default. Entry cards: 3px colored left border + category-tinted background. First list card: subtle green glow on hover.
+
+**Buttons**: Primary = `#10B981` green + `#022C22` text + glow shadow. Secondary = outlined. All: `rounded-md`, Inter 13px medium.
+
+**Badges**: `rounded-full` pills. Draft = amber bg/text. Published = green. Pending review = blue. Semi-transparent backgrounds in dark mode, opaque tints in light.
+
+**Empty states**: Centered. Icon in 56px bordered container, DM Sans heading, description, green CTA with GitHub icon + glow, secondary text link.
+
+**Loading states**: Skeleton loaders on `$bg-surface`. Never spinners. During AI generation, show streaming output.
+
+**Toast notifications**: Bottom-right. `$bg-surface` with border, shadow. Green check + title + description + dismiss X.
+
+**Theme switcher**: Three-icon segmented control (sun/monitor/moon) in sidebar bottom.
+
 ### Dashboard layout
- 
+
 ```
 ┌──────────┬───────────────────────────────────────────┐
+│ 🦎 Logo ▐│  Page Title              [Action Button]  │
 │          │                                           │
-│  Logo    │  Page Title              [Action Button]  │
-│          │                                           │
-│  Nav     │  ─────────────────────────────────────    │
-│  items   │                                           │
-│          │  Content area                             │
-│          │  (server-rendered or client component)    │
-│          │                                           │
-│          │                                           │
+│  Nav     │  Content area                             │
+│  (icons) │                                           │
 │          │                                           │
 │  ────    │                                           │
+│ ☀ 🖥 🌙  │                                           │
 │  User    │                                           │
-│  avatar  │                                           │
 └──────────┴───────────────────────────────────────────┘
 ```
- 
-Sidebar: fixed, 240px wide, `border-r`. Collapses to a top bar with hamburger on screens < 768px.
- 
+
+Sidebar: 240px, `#070707` dark bg, gradient `scan-eye` logo + collapse button, icon nav, bottom theme switcher + user. Collapses to hamburger on mobile.
+
 ### Public changelog layout
- 
+
 ```
-┌─────────────────────────────────────────────────────┐
-│  Project Name                            [RSS icon] │
-│  The latest updates and improvements                │
-│                                                     │
-│  [All] [Features] [Improvements] [Fixes] [Breaking] │
-│                                                     │
-│  ●  March 17, 2026 · v2.3.0                        │
-│  │                                                  │
-│  │  ✨ New features                                 │
-│  │                                                  │
-│  │  Added OAuth 2.0 support                         │
-│  │  Users can now sign in with Google...            │
-│  │                                                  │
-│  │  🐛 Bug fixes                                    │
-│  │                                                  │
-│  │  Fixed session timeout on mobile browsers        │
-│  │                                                  │
-│  ●  March 10, 2026                                  │
-│  │                                                  │
-│  │  ...                                             │
-└─────────────────────────────────────────────────────┘
+┌──────────────┬────────────────────────────────────────┐
+│ 🖼 acme/     │  Changelog                             │
+│   web-app  ▐ │  The latest updates...                 │
+│ Description  │                                        │
+│ Links        │  ● Mar 17, 2026  v2.3.0                │
+│              │  │  ● New features                      │
+│ FILTER       │  │  ┌──▌ Added OAuth 2.0 support ──┐   │
+│ ● All        │  │  └──────────────────────────────┘   │
+│ ● Features   │  │  ● Bug fixes                        │
+│ ● Fixes      │  │  ┌──▌ Fixed session timeout ────┐   │
+│              │  │  └──────────────────────────────┘   │
+│ ────         │  ● Mar 10, 2026                        │
+│ ☀ 🖥 🌙      │  │  ...                    💬 Ask...   │
+│ ✨ Powered by│                                        │
+└──────────────┴────────────────────────────────────────┘
 ```
- 
-Timeline: a thin vertical line (`border-l border-zinc-200`) on the left with small dot markers for each date group. Content indented to the right. On mobile (< 640px), the timeline line is hidden and entries stack with date headers only.
+
+Two-panel: 280px project sidebar (info, links, filter, theme switcher, footer) + scrollable timeline (green dots, category-tinted entry cards with colored left borders). Chat FAB (gradient pill) bottom-right. Mobile: sidebar → top bar, entries stack without timeline.
  
 ---
  
