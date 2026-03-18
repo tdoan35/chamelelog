@@ -419,3 +419,5 @@ export function contentToJson(content: ChangelogCategory[]): object {
 - [ ] SSE events can be consumed by a client (test with EventSource in browser console)
 - [ ] Errors (bad repo, auth failure, rate limit) are handled gracefully with error events
 - [ ] Pipeline works on a real public GitHub repo (test with a well-known repo)
+
+> **Note**: Phase 2 is backend-only (no UI). No design check needed. The SSE event format defined here will be consumed by the streaming output UI in Phase 3 — refer to `docs/design/chamelelog-design.pen` screen 04 for the expected visual output of those events.

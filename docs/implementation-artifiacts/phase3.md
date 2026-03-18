@@ -256,7 +256,9 @@ Refer to `docs/design/chamelelog-design.pen` for all finalized screens. The desi
 - [ ] Entries can be moved between categories
 - [ ] Autosave works (debounced PATCH)
 - [ ] "Publish" button works and updates the status
+- [ ] Toast notification appears on successful publish
 - [ ] Changelog list shows all entries with filter tabs
 - [ ] Keyboard shortcuts work
 - [ ] All pages have proper loading skeletons and empty states
 - [ ] The overall design feels clean, minimal, and polished
+- [ ] **Design check**: Compare all frontend output against `docs/design/chamelelog-design.pen` (screens 02, 03, 04, 05, 08, 11). Verify: DM Sans titles, JetBrains Mono metadata, green accent buttons with glow, colored left-border entry cards, category-tinted backgrounds, dark sidebar depth, theme switcher, toast styling. The .pen file is the source of truth.

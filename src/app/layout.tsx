@@ -1,11 +1,9 @@
 import type { Metadata } from "next";
-import { Inter, DM_Sans, JetBrains_Mono, Geist } from "next/font/google";
+import { Inter, DM_Sans, JetBrains_Mono } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import { SessionProvider } from "@/components/session-provider";
-import "./globals.css";
 import { cn } from "@/lib/utils";
-
-const geist = Geist({subsets:['latin'],variable:'--font-sans'});
+import "./globals.css";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -37,7 +35,11 @@ export default function RootLayout({
     <html
       lang="en"
       suppressHydrationWarning
-      className={cn(inter.variable, dmSans.variable, jetbrainsMono.variable, "font-sans", geist.variable)}
+      className={cn(
+        inter.variable,
+        dmSans.variable,
+        jetbrainsMono.variable
+      )}
     >
       <body className="min-h-screen bg-background font-sans text-foreground antialiased">
         <ThemeProvider attribute="class" defaultTheme="dark" enableSystem>

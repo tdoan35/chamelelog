@@ -4,6 +4,7 @@ import { useTheme } from "next-themes";
 import { useEffect, useState } from "react";
 import { Moon, Sun, Monitor } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { triggerThemeTransition } from "@/lib/theme-transition";
 
 const modes = [
   { value: "light", icon: Sun, label: "Light" },
@@ -16,18 +17,23 @@ export function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => setMounted(true), []);
-  if (!mounted) return <div className="h-8 rounded-full bg-border-muted px-1" />;
+  if (!mounted) return <div className="h-[34px] w-full rounded-lg bg-surface-hover dark:bg-[#111111]" />;
+
+  const handleThemeChange = (value: string) => {
+    triggerThemeTransition();
+    setTheme(value);
+  };
 
   return (
-    <div className="inline-flex items-center gap-0.5 rounded-full border border-border-primary bg-surface p-0.5">
+    <div data-theme-toggle className="flex w-full items-center gap-0.5 rounded-lg bg-surface-hover p-[3px] dark:bg-[#111111]">
       {modes.map(({ value, icon: Icon, label }) => (
         <button
           key={value}
-          onClick={() => setTheme(value)}
+          onClick={() => handleThemeChange(value)}
           className={cn(
-            "inline-flex h-7 w-7 items-center justify-center rounded-full transition-colors",
+            "inline-flex h-7 flex-1 items-center justify-center rounded-md transition-colors",
             theme === value
-              ? "bg-accent text-accent-text"
+              ? "bg-white text-text-primary dark:bg-[#070707]"
               : "text-text-tertiary hover:text-text-secondary"
           )}
           aria-label={label}

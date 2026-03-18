@@ -222,13 +222,18 @@ For authenticated users, redirect to the dashboard.
 ## Acceptance criteria
 
 - [ ] `/changelog` renders published changelogs without authentication
-- [ ] Entries are grouped by date with a clean timeline aesthetic
-- [ ] Category filter works via URL params
-- [ ] Version tags display alongside dates when present
+- [ ] Two-panel layout: project sidebar + scrollable timeline content
+- [ ] Entries are grouped by date with green timeline dots and connecting line
+- [ ] Category filter in sidebar works via URL params
+- [ ] Version tags display as JetBrains Mono badges alongside dates
+- [ ] Entry cards have colored left borders and category-tinted backgrounds
 - [ ] RSS feed at `/api/feed/rss` is valid XML and auto-discoverable
 - [ ] JSON feed at `/api/feed/json` follows the JSON Feed spec
 - [ ] Public page looks beautiful on both desktop and mobile
+- [ ] Mobile: sidebar collapses to top bar, entries stack without timeline
 - [ ] The page is server-rendered (check: view source shows content)
 - [ ] Empty state when no changelogs are published
-- [ ] Landing page provides a clear path to sign in
+- [ ] Landing page: mesh gradient bg, gradient "changelogs" text, green CTA with glow
+- [ ] Theme switcher works on public page sidebar
 - [ ] Dark mode works on all public pages
+- [ ] **Design check**: Compare all frontend output against `docs/design/chamelelog-design.pen` (screens 01, 01L, 06, 06L, 09). Verify: project sidebar layout, green timeline dots, category-tinted entry cards, mesh gradient landing, gradient hero text, mobile viewport adaptation. The .pen file is the source of truth.

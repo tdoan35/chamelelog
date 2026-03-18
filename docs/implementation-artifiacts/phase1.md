@@ -179,7 +179,7 @@ Run `pnpm db:push` to create the SQLite database.
 ### 1.3 — GitHub OAuth with NextAuth
 
 Create a GitHub OAuth App at https://github.com/settings/developers:
-- Authorization callback URL: `http://localhost:3000/api/auth/callback/github`
+- Authorization callback URL: `http://localhost:3002/api/auth/callback/github`
 - Request scopes: `repo`, `read:user`, `user:email`
 
 Create `src/app/api/auth/[...nextauth]/route.ts`:
@@ -261,13 +261,15 @@ Create the dashboard layout at `src/app/(dashboard)/layout.tsx`:
 
 - Sidebar with:
   - App logo at top: gradient `scan-eye` Lucide icon (green→blue, 135°) + "Chamelelog" in DM Sans 700
-  - Sidebar collapse/expand icon button (Lucide `panel-left-close`) top-right of logo row
   - Navigation with Lucide icons: `list` "Changelogs", `circle-plus` "Generate new", `settings` "Settings"
   - Active nav item has `#111111` background (dark) / `$bg-surface` (light), bold text
-  - Bottom section: three-icon theme switcher (sun/monitor/moon segmented control), then user avatar + name
-  - Theme switcher: icon-only buttons in a pill container. Active mode gets highlighted background. Supports light/dark/system
+  - Bottom section (footer): collapse/expand icon button (`panel-left-close`/`panel-left-open`), three-icon theme switcher (sun/monitor/moon segmented control), then user avatar + name
+  - Theme switcher: icon-only buttons in a pill container. Active mode gets highlighted background (`bg-white` light / `bg-[#070707]` dark). Supports light/dark/system. When sidebar is collapsed, shows a single cycle button with matching pill styling.
+  - User avatar: clickable, opens a popover menu with "Sign out" option (uses portal to escape sidebar overflow)
+  - Unified theme transition: all elements animate at `0.3s ease` during theme switches via a temporary `.theme-transition` class on `<html>`. Theme toggle buttons are excluded via `data-theme-toggle` attribute to prevent flickering.
 - Main content area to the right of the sidebar, separated by a 1px border
 - Responsive: sidebar collapses to a top bar with hamburger menu on mobile
+- Collapsed sidebar: 72px wide. All icons remain centered (logo, nav, footer buttons, avatar) with no pixel shift during expand/collapse. Text fades via `opacity` transitions. Layout structure stays constant — only the sidebar width animates, and `overflow-hidden` clips content.
 
 Sidebar uses a distinctly darker background (`#070707`) than the page (`#0A0A0A`) in dark mode to create depth separation. In light mode, sidebar is white with `$bg-surface` nav highlights.
 
@@ -297,7 +299,8 @@ Sidebar uses a distinctly darker background (`#070707`) than the page (`#0A0A0A`
 Create the dashboard home page at `src/app/(dashboard)/page.tsx`:
 
 - Page title: "Changelogs" in DM Sans 700
-- If the user has no projects connected, show an empty state: icon in a bordered container, "No changelogs yet" heading, "Connect a GitHub repository and generate your first changelog from your Git commits." description, green "Connect repository" CTA button with GitHub icon and glow, plus an "or generate from a public repo" text link
+- If the user has no projects connected, show an empty state: icon in a bordered container (56px, `rounded-xl`, `$bg-surface` + `$border`), "No changelogs yet" heading (DM Sans 18px 600), description text (Inter 14px, 380px max-width), gradient "Connect repository" CTA button (green→blue 135° with `#022C22` text and green glow) with GitHub icon, plus "or" + green "generate from a public repo" text link inline
+- Filter tabs ("All", "Drafts", "Published") shown when projects exist — pill-shaped, active tab has `$bg-surface` / `dark:bg-[#141414]`
 - If the user has projects but no changelogs, show similar empty state with "Generate changelog" CTA
 - If changelogs exist, render a `<ChangelogList />` component (can be a placeholder for now — will be fleshed out in Phase 3)
 
@@ -310,13 +313,14 @@ Create `src/app/api/projects/route.ts`:
 
 On the dashboard, add a "Connect repository" modal dialog (see design screen 10):
 - Modal with header ("Connect repository" + close X button), body, and footer
-- Search input with search icon: "Search repositories..."
-- List of user's GitHub repos fetched via API, each showing `git-branch` icon + `owner/repo` name
-- Selected repo highlighted in green with check icon
-- Footer: "Cancel" secondary button + "Connect" green primary button with glow
+- "Search your repositories" label + search input with search icon: "Search repositories..."
+- List of user's GitHub repos fetched via `GET /api/github/repos`, each showing `git-branch` icon + `owner/repo` name in monospace
+- Selected repo highlighted in green (`bg-accent/10`) with check icon
+- Footer: "Cancel" outlined button + "Connect" green primary button with glow
+- Modal: 480px wide, `#141414` bg, 12px corner radius, stroke `#262626`, body padding 20px
 - Use the GitHub API to list the user's repositories — this is the primary UX (not a text input fallback)
 - On submit, POST to `/api/projects`
-- After success, redirect to the generate page
+- **Note**: The dialog component (`ConnectRepoDialog`) and API endpoint (`/api/github/repos`) are fully built. The empty state CTA button currently links to `/changelogs/new` — wiring the dialog trigger will be done in Phase 3 when the generate page is built.
 
 ### 1.6 — Environment and configuration
 
@@ -327,9 +331,11 @@ DATABASE_URL="file:./dev.db"
 GITHUB_CLIENT_ID=""
 GITHUB_CLIENT_SECRET=""
 NEXTAUTH_SECRET=""
-NEXTAUTH_URL="http://localhost:3000"
+NEXTAUTH_URL="http://localhost:3002"
 OPENROUTER_API_KEY=""
 ```
+
+> **Note**: Dev server runs on port 3002 (`next dev -p 3002`). GitHub OAuth callback URL must be set to `http://localhost:3002/api/auth/callback/github`.
 
 Create `src/lib/ai-client.ts` (placeholder for Phase 2):
 
@@ -357,12 +363,24 @@ This seed data will be useful for developing the UI in Phase 3 and for the demo 
 
 ## Acceptance criteria
 
-- [ ] `pnpm install && pnpm db:push && pnpm dev` starts the app without errors
-- [ ] User can sign in with GitHub and sees the dashboard
-- [ ] Dashboard shows empty state with CTA when no projects exist
-- [ ] User can connect a GitHub repository
-- [ ] Connected repos appear in the dashboard
-- [ ] Sign out works
-- [ ] Dark mode toggle works
-- [ ] `.env.example` documents all required variables
-- [ ] Seed script creates realistic sample data
+- [x] `pnpm install && pnpm db:push && pnpm dev` starts the app without errors (port 3002)
+- [x] User can sign in with GitHub and sees the dashboard (with loading state on CTA button)
+- [x] Dashboard shows empty state with gradient CTA when no projects exist
+- [ ] User can connect a GitHub repository via search modal — **component built, trigger deferred to Phase 3**
+- [ ] Connected repos appear in the dashboard — **blocked by above**
+- [x] Sign out works (via avatar popover menu → redirects to `/login`)
+- [x] Theme switcher works (light/dark/system in sidebar, light/dark on landing page)
+- [x] `.env.example` documents all required variables
+- [x] Seed script creates realistic sample data
+- [x] **Design check**: Compared against `docs/design/chamelelog-design.pen` (screens 01, 01L, 02, 08, 10). Verified: gradient logo, DM Sans/JetBrains Mono/Inter typography, emerald green accents with glow, gradient CTA buttons, dark sidebar depth, theme switcher, filter tabs, empty state styling.
+
+## Implementation notes (deviations from original spec)
+
+- **Port**: Dev server on 3002 (not 3000) — port 3001 conflicts with VS Code
+- **Sidebar collapse button**: Moved to footer (above theme switcher) instead of logo row — cleaner collapsed state
+- **Sign out**: Via avatar popover menu (portal-based) instead of a standalone icon button
+- **Landing page**: Enhanced with Aceternity `BackgroundRippleEffect` (interactive grid) and custom `AuroraBackground` (animated radial gradients in green/teal/blue). "Sign in with GitHub" button shows loading spinner + "Redirecting..." on click.
+- **CTA buttons**: Empty state and landing page both use green→blue gradient (`linear-gradient(135deg, #10B981, #3B82F6)`) with dark green text, matching updated design spec
+- **Filter tabs**: Added to dashboard home ("All", "Drafts", "Published") with URL query param filtering
+- **Connect repo dialog**: Component and API (`/api/github/repos`) fully built but not wired to empty state button — deferred to Phase 3 generate page
+- **Additional dependencies**: `motion`, `@base-ui/react`, `tw-animate-css` added by shadcn/aceternity components

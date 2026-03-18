@@ -332,6 +332,7 @@ Before recording the demo:
 - [ ] Mobile responsive: dashboard sidebar collapses, public page adapts
 - [ ] No console errors in production build
 - [ ] `pnpm build` succeeds without warnings
+- [ ] **Final design check**: Do a full pass comparing every screen against `docs/design/chamelelog-design.pen` (all 12 screens: 01–11 + light mode variants). Verify: gradient logo icon, DM Sans/JetBrains Mono/Inter typography, emerald green accents with glow, dark sidebar depth, theme switcher, category-tinted cards, mesh gradient landing, chat widget bubble styling, toast notification, connect repo modal, mobile viewport. The .pen file is the source of truth for all visual decisions.
 - [ ] `.env.example` is accurate and well-commented
 - [ ] Seed script creates compelling demo data
 - [ ] README has: setup instructions, architecture explanation, screen recording, AI tools mention

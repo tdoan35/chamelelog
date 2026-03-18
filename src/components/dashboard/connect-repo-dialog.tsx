@@ -89,71 +89,86 @@ export function ConnectRepoDialog({
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
-      <div className="fixed inset-0 bg-black/60" onClick={onClose} />
-      <div className="relative z-50 flex w-full max-w-md flex-col overflow-hidden rounded-xl border border-border-primary bg-background shadow-2xl">
+      <div className="fixed inset-0 bg-black/[0.38]" onClick={onClose} />
+      <div
+        className="relative z-50 flex flex-col overflow-hidden rounded-xl border border-border-primary shadow-2xl"
+        style={{
+          width: 480,
+          backgroundColor: "#141414",
+          boxShadow: "0 8px 32px #00000040",
+        }}
+      >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-primary px-5 py-4">
-          <h2 className="font-display text-base font-bold text-text-primary">
+          <h2 className="font-display text-base font-semibold text-text-primary">
             Connect repository
           </h2>
           <button
             onClick={onClose}
-            className="inline-flex h-7 w-7 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-surface hover:text-text-secondary"
+            className="inline-flex items-center justify-center text-text-tertiary transition-colors hover:text-text-secondary"
           >
-            <X className="h-4 w-4" />
+            <X className="h-[18px] w-[18px]" />
           </button>
         </div>
 
-        {/* Search */}
-        <div className="border-b border-border-muted px-5 py-3">
-          <div className="relative">
-            <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
-            <input
-              type="text"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-              placeholder="Search repositories..."
-              className="w-full rounded-lg border border-border-primary bg-surface py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
-              autoFocus
-            />
+        {/* Body */}
+        <div className="flex flex-col gap-5 p-5">
+          {/* Search section */}
+          <div className="flex flex-col gap-2">
+            <label className="text-[13px] font-medium text-text-secondary">
+              Search your repositories
+            </label>
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-text-tertiary" />
+              <input
+                type="text"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search repositories..."
+                className="w-full rounded-lg border border-border-primary bg-[#0A0A0A] py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                autoFocus
+              />
+            </div>
           </div>
-        </div>
 
-        {/* Repo list */}
-        <div className="max-h-72 overflow-y-auto px-2 py-2">
-          {loading ? (
-            <div className="flex items-center justify-center py-12">
-              <Loader2 className="h-5 w-5 animate-spin text-text-tertiary" />
-            </div>
-          ) : filtered.length === 0 ? (
-            <div className="py-8 text-center text-sm text-text-tertiary">
-              {search ? "No repositories match your search" : "No repositories found"}
-            </div>
-          ) : (
-            filtered.map((repo) => {
-              const isSelected = selected?.fullName === repo.fullName;
-              return (
-                <button
-                  key={repo.fullName}
-                  onClick={() => setSelected(isSelected ? null : repo)}
-                  className={cn(
-                    "flex w-full items-center gap-3 rounded-lg px-3 py-2.5 text-left transition-colors",
-                    isSelected
-                      ? "bg-accent/10 text-accent"
-                      : "text-text-secondary hover:bg-surface hover:text-text-primary"
-                  )}
-                >
-                  <GitBranch className="h-4 w-4 shrink-0" />
-                  <span className="flex-1 truncate font-mono text-sm">
-                    {repo.fullName}
-                  </span>
-                  {isSelected && (
-                    <Check className="h-4 w-4 shrink-0 text-accent" />
-                  )}
-                </button>
-              );
-            })
-          )}
+          {/* Repo list */}
+          <div className="flex max-h-56 flex-col gap-0.5 overflow-y-auto">
+            {loading ? (
+              <div className="flex items-center justify-center py-12">
+                <Loader2 className="h-5 w-5 animate-spin text-text-tertiary" />
+              </div>
+            ) : filtered.length === 0 ? (
+              <div className="py-8 text-center text-sm text-text-tertiary">
+                {search
+                  ? "No repositories match your search"
+                  : "No repositories found"}
+              </div>
+            ) : (
+              filtered.map((repo) => {
+                const isSelected = selected?.fullName === repo.fullName;
+                return (
+                  <button
+                    key={repo.fullName}
+                    onClick={() => setSelected(isSelected ? null : repo)}
+                    className={cn(
+                      "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors",
+                      isSelected
+                        ? "bg-accent/10 text-accent"
+                        : "text-text-secondary hover:bg-[#1A1A1A] hover:text-text-primary"
+                    )}
+                  >
+                    <GitBranch className="h-4 w-4 shrink-0" />
+                    <span className="flex-1 truncate font-mono text-[13px]">
+                      {repo.fullName}
+                    </span>
+                    {isSelected && (
+                      <Check className="h-4 w-4 shrink-0 text-accent" />
+                    )}
+                  </button>
+                );
+              })
+            )}
+          </div>
         </div>
 
         {/* Error */}
@@ -167,14 +182,15 @@ export function ConnectRepoDialog({
         <div className="flex items-center justify-end gap-2 border-t border-border-primary px-5 py-4">
           <button
             onClick={onClose}
-            className="rounded-lg px-4 py-2 text-sm font-medium text-text-secondary transition-colors hover:bg-surface hover:text-text-primary"
+            className="rounded-md border border-border-primary px-4 py-2 text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
           >
             Cancel
           </button>
           <button
             onClick={handleConnect}
             disabled={!selected || connecting}
-            className="inline-flex items-center gap-2 rounded-lg bg-accent px-4 py-2 text-sm font-semibold text-accent-text shadow-[0_0_16px_#10B98130] transition-colors hover:bg-accent-hover disabled:opacity-50 disabled:shadow-none"
+            className="inline-flex items-center gap-2 rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-accent-text transition-colors hover:bg-accent-hover disabled:opacity-50 disabled:shadow-none"
+            style={{ boxShadow: "0 0 12px 2px #10B98130" }}
           >
             {connecting && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
             Connect

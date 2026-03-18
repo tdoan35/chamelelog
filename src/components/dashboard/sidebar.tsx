@@ -7,16 +7,21 @@ import {
   List,
   CirclePlus,
   Settings,
-  LogOut,
   Menu,
   X,
   Monitor,
+  Moon,
+  Sun,
+  LogOut,
   PanelLeftClose,
   PanelLeftOpen,
   ScanEye,
 } from "lucide-react";
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import { createPortal } from "react-dom";
+import { useTheme } from "next-themes";
 import { cn } from "@/lib/utils";
+import { triggerThemeTransition } from "@/lib/theme-transition";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
@@ -30,6 +35,22 @@ export function Sidebar() {
   const { data: session } = useSession();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
+  const [userMenuOpen, setUserMenuOpen] = useState(false);
+  const [menuPos, setMenuPos] = useState({ x: 0, y: 0 });
+  const { theme, setTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
+
+  const cycleTheme = () => {
+    const order = ["light", "system", "dark"];
+    const idx = order.indexOf(theme ?? "system");
+    triggerThemeTransition();
+    setTheme(order[(idx + 1) % order.length]);
+  };
+
+  const ThemeIcon = mounted
+    ? theme === "light" ? Sun : theme === "dark" ? Moon : Monitor
+    : Monitor;
 
   return (
     <>
@@ -64,18 +85,19 @@ export function Sidebar() {
       {/* Sidebar */}
       <aside
         className={cn(
-          "fixed inset-y-0 left-0 z-50 flex flex-col border-r border-border-primary bg-sidebar",
+          "fixed inset-y-0 left-0 z-50 flex flex-col overflow-hidden border-r border-border-primary bg-sidebar",
           "transition-all duration-200 md:static",
           mobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0",
-          collapsed ? "w-16" : "w-60"
+          collapsed ? "w-[72px]" : "w-60"
         )}
       >
-        {/* Logo row */}
-        <div className="flex h-14 items-center justify-between px-4">
-          <div className="flex items-center gap-2.5 overflow-hidden">
+        {/* Top section: logo + nav */}
+        <div className="flex flex-col gap-6 px-4 pt-6">
+          {/* Logo row — pl-[9px] centers 22px icon at 36px in 72px collapsed sidebar */}
+          <div className="flex h-[22px] items-center gap-2 overflow-hidden pl-[9px]">
             <div className="shrink-0">
               <ScanEye
-                className="h-5 w-5"
+                className="h-[22px] w-[22px]"
                 style={{
                   color: "transparent",
                   background: "linear-gradient(135deg, #10B981, #3B82F6)",
@@ -84,7 +106,6 @@ export function Sidebar() {
                   stroke: "url(#logo-gradient)",
                 }}
               />
-              {/* SVG gradient definition for stroke */}
               <svg width="0" height="0" className="absolute">
                 <defs>
                   <linearGradient
@@ -100,15 +121,61 @@ export function Sidebar() {
                 </defs>
               </svg>
             </div>
-            {!collapsed && (
-              <span className="font-display text-base font-bold text-text-primary">
-                Chamelelog
-              </span>
-            )}
+            <span
+              className={cn(
+                "font-display text-base font-bold text-text-primary whitespace-nowrap transition-opacity duration-200",
+                collapsed ? "opacity-0" : "opacity-100"
+              )}
+            >
+              Chamelelog
+            </span>
           </div>
+
+          {/* Nav */}
+          <nav>
+            <div className="flex flex-col gap-0.5">
+              {navItems.map((item) => {
+                const isActive =
+                  item.href === "/"
+                    ? pathname === "/"
+                    : pathname.startsWith(item.href);
+                return (
+                  <Link
+                    key={item.href}
+                    href={item.href}
+                    onClick={() => setMobileOpen(false)}
+                    title={collapsed ? item.label : undefined}
+                    className={cn(
+                      "flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-3 py-2 text-[13px] font-medium transition-colors",
+                      isActive
+                        ? "bg-surface text-text-primary font-semibold dark:bg-[#111111]"
+                        : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
+                    )}
+                  >
+                    <item.icon className="h-4 w-4 shrink-0" />
+                    <span
+                      className={cn(
+                        "whitespace-nowrap transition-opacity duration-200",
+                        collapsed ? "opacity-0" : "opacity-100"
+                      )}
+                    >
+                      {item.label}
+                    </span>
+                  </Link>
+                );
+              })}
+            </div>
+          </nav>
+        </div>
+
+        <div className="flex-1" />
+
+        {/* Footer */}
+        <div className="flex flex-col gap-3 px-4 pb-6">
+          {/* Expand/collapse toggle */}
           <button
             onClick={() => setCollapsed(!collapsed)}
-            className="hidden h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-surface hover:text-text-secondary md:inline-flex"
+            className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-surface-hover hover:text-text-secondary"
             aria-label={collapsed ? "Expand sidebar" : "Collapse sidebar"}
           >
             {collapsed ? (
@@ -117,89 +184,103 @@ export function Sidebar() {
               <PanelLeftClose className="h-4 w-4" />
             )}
           </button>
-        </div>
 
-        {/* Nav */}
-        <nav className="flex-1 space-y-1 px-3 py-2">
-          {navItems.map((item) => {
-            const isActive =
-              item.href === "/"
-                ? pathname === "/"
-                : pathname.startsWith(item.href);
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={() => setMobileOpen(false)}
-                title={collapsed ? item.label : undefined}
-                className={cn(
-                  "flex items-center gap-3 rounded-md px-3 py-2 text-sm font-medium transition-colors",
-                  collapsed && "justify-center px-0",
-                  isActive
-                    ? "bg-surface text-text-primary font-semibold dark:bg-[#111111]"
-                    : "text-text-secondary hover:bg-surface hover:text-text-primary"
-                )}
-              >
-                <item.icon className="h-4 w-4 shrink-0" />
-                {!collapsed && item.label}
-              </Link>
-            );
-          })}
-        </nav>
-
-        {/* Footer */}
-        <div className="border-t border-border-primary p-3">
-          {/* Theme switcher */}
-          <div
-            className={cn(
-              "mb-3 flex",
-              collapsed ? "justify-center" : "justify-start"
-            )}
-          >
-            {collapsed ? (
-              <button
-                onClick={() => {
-                  /* toggle would need theme context */
-                }}
-                className="inline-flex h-8 w-8 items-center justify-center rounded-md text-text-tertiary hover:bg-surface hover:text-text-secondary"
-              >
-                <Monitor className="h-4 w-4" />
-              </button>
-            ) : (
+          {/* Theme switcher — both always rendered, crossfade with opacity */}
+          <div className="relative h-[34px]">
+            {/* Expanded: full 3-button toggle */}
+            <div
+              className={cn(
+                "absolute inset-0 transition-opacity duration-200",
+                collapsed ? "pointer-events-none opacity-0" : "opacity-100"
+              )}
+            >
               <ThemeToggle />
-            )}
+            </div>
+            {/* Collapsed: single cycle button */}
+            <div
+              className={cn(
+                "absolute inset-y-0 left-0 flex items-center transition-opacity duration-200",
+                collapsed ? "opacity-100" : "pointer-events-none opacity-0"
+              )}
+            >
+              <div data-theme-toggle className="flex h-[34px] w-[34px] items-center justify-center rounded-lg bg-surface-hover p-[3px] dark:bg-[#111111]">
+                <button
+                  onClick={cycleTheme}
+                  className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md bg-white text-text-primary transition-colors dark:bg-[#070707]"
+                  aria-label="Cycle theme"
+                >
+                  <ThemeIcon className="h-3.5 w-3.5" />
+                </button>
+              </div>
+            </div>
           </div>
 
-          {/* User */}
-          <div
-            className={cn(
-              "flex items-center",
-              collapsed ? "justify-center" : "justify-between"
-            )}
-          >
-            <div className="flex items-center gap-2 min-w-0">
-              {session?.user?.image && (
+          {/* User — clickable with popover menu */}
+          <div className="pt-3">
+            <button
+              onClick={(e) => {
+                setMenuPos({ x: e.clientX, y: e.clientY });
+                setUserMenuOpen(!userMenuOpen);
+              }}
+              className="flex w-full items-center gap-2.5 overflow-hidden rounded-md pl-1 transition-colors hover:bg-surface-hover"
+            >
+              {session?.user?.image ? (
                 <img
                   src={session.user.image}
                   alt=""
-                  className="h-7 w-7 shrink-0 rounded-full"
+                  className="h-8 w-8 min-h-8 min-w-8 shrink-0 rounded-full"
                 />
+              ) : (
+                <div className="h-8 w-8 min-h-8 min-w-8 shrink-0 rounded-full bg-[#2A2A2A]" />
               )}
-              {!collapsed && (
-                <span className="truncate text-sm text-text-secondary">
+              <div
+                className={cn(
+                  "flex min-w-0 flex-col gap-0.5 whitespace-nowrap transition-opacity duration-200",
+                  collapsed ? "opacity-0" : "opacity-100"
+                )}
+              >
+                <span className="truncate text-left text-sm font-medium text-text-primary">
                   {session?.user?.name ?? "User"}
                 </span>
+                {session?.user?.email && (
+                  <span className="truncate text-left font-mono text-[11px] text-text-tertiary">
+                    {session.user.email}
+                  </span>
+                )}
+              </div>
+            </button>
+
+            {/* Popover menu — rendered in a portal to escape sidebar overflow */}
+            {userMenuOpen &&
+              mounted &&
+              createPortal(
+                <>
+                  <div
+                    className="fixed inset-0 z-[100]"
+                    onClick={() => setUserMenuOpen(false)}
+                  />
+                  <div
+                    className="fixed z-[100] w-48 overflow-hidden rounded-lg border border-border-primary bg-surface shadow-lg dark:bg-[#141414]"
+                    style={{
+                      left: menuPos.x,
+                      top: menuPos.y,
+                      transform: "translateY(-100%)",
+                    }}
+                  >
+                    <button
+                      onClick={() => {
+                        setUserMenuOpen(false);
+                        signOut({ callbackUrl: "/login" });
+                      }}
+                      className="flex w-full items-center gap-2 px-3 py-2.5 text-[13px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+                    >
+                      <LogOut className="h-4 w-4" />
+                      Sign out
+                    </button>
+                  </div>
+                </>,
+                document.body
               )}
-            </div>
-            {!collapsed && (
-              <button
-                onClick={() => signOut()}
-                className="inline-flex h-7 w-7 shrink-0 items-center justify-center rounded-md text-text-tertiary transition-colors hover:bg-surface hover:text-text-primary"
-                aria-label="Sign out"
-              >
-                <LogOut className="h-4 w-4" />
-              </button>
-            )}
           </div>
         </div>
       </aside>
