@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "motion/react";
 import {
   Pencil,
@@ -10,6 +10,7 @@ import {
   Check,
   X,
   SquarePen,
+  Loader2,
 } from "lucide-react";
 import { CATEGORY_COLORS, CATEGORY_ORDER } from "@/lib/category-colors";
 import type { StreamEntry, CompletionData } from "@/hooks/use-changelog-stream";
@@ -33,6 +34,8 @@ export function StreamingOutput({
   completionData,
   onGenerateAgain,
 }: StreamingOutputProps) {
+  const router = useRouter();
+  const [navigating, setNavigating] = useState(false);
   const [editingKey, setEditingKey] = useState<string | null>(null);
   const [editTitle, setEditTitle] = useState("");
   const [editDesc, setEditDesc] = useState("");
@@ -294,17 +297,25 @@ export function StreamingOutput({
           transition={{ duration: 0.2, delay: 0.1 }}
           className="flex shrink-0 items-center gap-3 border-t border-border-muted pt-4"
         >
-          <Link
-            href={`/changelogs/${changelogId}`}
-            className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90"
+          <button
+            onClick={() => {
+              setNavigating(true);
+              router.push(`/changelogs/${changelogId}`);
+            }}
+            disabled={navigating}
+            className="inline-flex items-center gap-2 rounded-lg px-5 py-2.5 text-[13px] font-semibold text-white transition-opacity hover:opacity-90 disabled:opacity-70"
             style={{
               background: "linear-gradient(135deg, #10B981, #3B82F6)",
-              boxShadow: "0 0 16px 2px #10B98125",
+              boxShadow: navigating ? "none" : "0 0 16px 2px #10B98125",
             }}
           >
-            <Pencil className="h-3.5 w-3.5" />
-            Edit & Review
-          </Link>
+            {navigating ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <Pencil className="h-3.5 w-3.5" />
+            )}
+            {navigating ? "Loading..." : "Edit & Review"}
+          </button>
           <button
             onClick={onGenerateAgain}
             className="inline-flex items-center gap-2 rounded-lg border border-border-primary px-5 py-2.5 text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"

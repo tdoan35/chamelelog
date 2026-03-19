@@ -8,13 +8,14 @@ import { FilterTabs } from "@/components/dashboard/filter-tabs";
 export default async function DashboardPage({
   searchParams,
 }: {
-  searchParams: Promise<{ filter?: string }>;
+  searchParams: Promise<{ filter?: string; project?: string }>;
 }) {
   const user = await getCurrentUser();
   if (!user) return null;
 
   const params = await searchParams;
   const filter = params.filter ?? "all";
+  const activeProject = params.project ?? "all";
 
   const projects = await db.project.findMany({
     where: { userId: user.id },
@@ -23,6 +24,7 @@ export default async function DashboardPage({
   const whereClause: Record<string, unknown> = { userId: user.id };
   if (filter === "drafts") whereClause.status = "draft";
   if (filter === "published") whereClause.status = "published";
+  if (activeProject !== "all") whereClause.projectId = activeProject;
 
   const changelogs = await db.changelog.findMany({
     where: whereClause,
@@ -33,7 +35,7 @@ export default async function DashboardPage({
   // Empty state — no projects at all
   if (projects.length === 0) {
     return (
-      <div>
+      <div className="pt-8">
         <h1 className="font-display text-2xl font-bold text-text-primary">
           Changelogs
         </h1>
@@ -54,7 +56,7 @@ export default async function DashboardPage({
           </p>
           <div className="mt-5 flex items-center gap-2.5">
             <Link
-              href="/changelogs/new"
+              href="/changelogs/new?connect=1"
               className="inline-flex items-center gap-1.5 rounded-lg px-[18px] py-2.5 text-[13px] font-medium text-white"
               style={{
                 background: "linear-gradient(135deg, #10B981, #3B82F6)",
@@ -79,7 +81,7 @@ export default async function DashboardPage({
 
   // Has projects — show header with generate button + filter tabs
   return (
-    <div>
+    <div className="pt-8">
       <div className="flex items-center justify-between">
         <h1 className="font-display text-2xl font-bold text-text-primary">
           Changelogs
@@ -97,7 +99,7 @@ export default async function DashboardPage({
         </Link>
       </div>
 
-      <FilterTabs active={filter} />
+      <FilterTabs active={filter} projects={projects} activeProject={activeProject} />
 
       {changelogs.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-24">

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect, useCallback } from "react";
+import { useSearchParams } from "next/navigation";
 import { format, subDays } from "date-fns";
 import {
   GitBranch,
@@ -66,7 +67,21 @@ export default function GeneratePage() {
   const [tone, setTone] = useState<Tone>("technical");
   const [connectDialogOpen, setConnectDialogOpen] = useState(false);
 
+  const searchParams = useSearchParams();
   const stream = useChangelogStream();
+
+  // Fetch saved preferences on mount
+  useEffect(() => {
+    fetch("/api/settings/preferences")
+      .then((res) => res.json())
+      .then((data) => {
+        if (data.data) {
+          setTone(data.data.defaultTone ?? "technical");
+          setDatePreset(data.data.defaultDateRange ?? "last-release");
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Fetch projects on mount
   useEffect(() => {
@@ -76,6 +91,13 @@ export default function GeneratePage() {
       .catch(() => {})
       .finally(() => setLoadingProjects(false));
   }, []);
+
+  // Auto-open connect dialog when redirected with ?connect=1
+  useEffect(() => {
+    if (!loadingProjects && searchParams.get("connect") === "1") {
+      setConnectDialogOpen(true);
+    }
+  }, [loadingProjects, searchParams]);
 
   // Fetch tags when project changes
   useEffect(() => {
@@ -152,7 +174,7 @@ export default function GeneratePage() {
 
   if (phase === "streaming") {
     return (
-      <div className="mx-auto max-w-2xl">
+      <div className="mx-auto max-w-2xl pt-8">
         <StreamingOutput
           status={stream.status}
           entries={stream.entries}
@@ -167,7 +189,7 @@ export default function GeneratePage() {
   }
 
   return (
-    <div className="mx-auto max-w-2xl">
+    <div className="mx-auto max-w-2xl pt-8">
       <h1 className="font-display text-2xl font-bold text-text-primary">
         Generate changelog
       </h1>
