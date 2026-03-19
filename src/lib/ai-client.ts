@@ -1,8 +1,7 @@
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
-export const openrouter = createOpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
+const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
-export const model = openrouter("anthropic/claude-sonnet-4-20250514");
+export const model = openrouter.chat("google/gemini-2.5-flash-lite");
