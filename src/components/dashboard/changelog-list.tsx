@@ -41,13 +41,16 @@ export function ChangelogList({
 }) {
   return (
     <div className="mt-4 flex flex-col gap-3">
-      {changelogs.map((changelog) => {
+      {changelogs.map((changelog, index) => {
         const status = statusConfig[changelog.status] ?? statusConfig.draft;
         return (
           <Link
             key={changelog.id}
             href={`/changelogs/${changelog.id}`}
-            className="block rounded-lg border border-border-primary p-4 transition-all hover:shadow-sm"
+            className={cn(
+              "block rounded-lg border border-border-primary p-4 transition-all hover:shadow-sm",
+              index === 0 && "hover:shadow-[0_0_16px_2px_#10B98120]"
+            )}
             style={{ backgroundColor: "var(--surface)" }}
           >
             <div className="flex items-start justify-between gap-4">

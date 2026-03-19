@@ -1,7 +1,10 @@
 import { classifyCommits, type ClassificationResult } from "./classify";
-import { summarizeChanges, type ChangelogEntry } from "./summarize";
+import { summarizeChanges } from "./summarize";
 import { fetchFilteredCommits } from "@/lib/github/commits";
 import { createGitHubClient } from "@/lib/github/client";
+import type { ChangelogEntry, ChangelogCategory } from "@/lib/types";
+
+export type { ChangelogEntry, ChangelogCategory };
 
 export interface PipelineInput {
   accessToken: string;
@@ -10,11 +13,6 @@ export interface PipelineInput {
   fromDate: string;
   toDate: string;
   tone?: "technical" | "product" | "enterprise";
-}
-
-export interface ChangelogCategory {
-  category: "features" | "improvements" | "fixes" | "breaking";
-  entries: ChangelogEntry[];
 }
 
 export interface PipelineResult {

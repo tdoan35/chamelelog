@@ -4,6 +4,9 @@ import { model } from "@/lib/ai-client";
 import { getSummarizeSystemPrompt } from "./prompts";
 import type { ClassificationResult } from "./classify";
 import type { CommitData } from "@/lib/github/commits";
+import type { ChangelogEntry } from "@/lib/types";
+
+export type { ChangelogEntry };
 
 export const SummarizeSchema = z.object({
   entries: z.array(
@@ -17,7 +20,6 @@ export const SummarizeSchema = z.object({
 });
 
 export type SummarizeResult = z.infer<typeof SummarizeSchema>;
-export type ChangelogEntry = SummarizeResult["entries"][number];
 
 function formatClustersForSummarization(
   classification: ClassificationResult,
