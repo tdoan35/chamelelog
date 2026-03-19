@@ -6,13 +6,13 @@ Spec: `docs/implementation-artifiacts/phase4.md`
 
 ## Core Tasks
 
-- [ ] **4.1 — Public changelog page** (`/changelog`): Server-rendered feed of published changelogs, two-panel layout with project sidebar + scrollable timeline content
-- [ ] **4.2 — Changelog entry component**: Reusable `changelog-entry.tsx`, `changelog-feed.tsx` (timeline with green dots), `project-sidebar.tsx` (project info, links, category filter)
-- [ ] **4.3 — Category badges**: Shared `CategoryBadge` component — subtle colored text on public page, pill badges on dashboard
-- [ ] **4.4 — RSS feed** (`/api/feed/rss`): Valid RSS 2.0 XML with auto-discovery `<link>` in public layout
-- [ ] **4.5 — JSON feed** (`/api/feed/json`): JSON Feed 1.1 spec compliant
-- [ ] **4.6 — Public layout** (`src/app/(public)/layout.tsx`): Two-panel with sidebar, theme switcher, "Powered by Chamelelog" footer
-- [ ] **4.7 — Landing page** (`/`): Mesh gradient background, gradient "changelogs" headline, GitHub sign-in CTA, example changelog link
+- [X] **4.1 — Public changelog page** (`/changelog`): Server-rendered feed of published changelogs, two-panel layout with project sidebar + scrollable timeline content
+- [X] **4.2 — Changelog entry component**: Reusable `changelog-entry.tsx`, `changelog-feed.tsx` (timeline with green dots), `project-sidebar.tsx` (project info, links, category filter)
+- [X] **4.3 — Category badges**: Shared `CategoryBadge` component — subtle colored text on public page, pill badges on dashboard
+- [X] **4.4 — RSS feed** (`/api/feed/rss`): Valid RSS 2.0 XML with auto-discovery `<link>` in public layout
+- [X] **4.5 — JSON feed** (`/api/feed/json`): JSON Feed 1.1 spec compliant
+- [X] **4.6 — Public layout** (`src/app/(public)/layout.tsx`): Two-panel with sidebar, theme switcher, "Powered by Chamelelog" footer
+- [X] **4.7 — Landing page** (`/`): Mesh gradient background, gradient "changelogs" headline, GitHub sign-in CTA, example changelog link
 
 ## High Priority
 
@@ -20,11 +20,11 @@ Spec: `docs/implementation-artifiacts/phase4.md`
 
 ## Bugs / Polish
 
-- [ ] **Sidebar repo icon**: Replace empty gray placeholder with generic logo image (`docs/design/images/generic-logo.png`)
-- [ ] **Sidebar collapse button position**: Move the expand/collapse icon button to right above the theme switcher (matching the dev dashboard layout)
-- [ ] **Sticky changelog header**: Make the "Changelog" h1 and "All notable changes to {repo}" subtitle sticky at the top when the user scrolls down
-- [ ] **Windows scrollbar styling**: Style scrollbars on Windows to match macOS thin overlay scrollbars
-- [ ] **Editor page scroll**: On `/changelogs/[id]`, only the changelog entries section should scroll, not the entire page (header should stay fixed)
+- [X] **Sidebar repo icon**: Replace empty gray placeholder with generic logo image (`docs/design/images/generic-logo.png`)
+- [X] **Sidebar collapse button position**: Move the expand/collapse icon button to right above the theme switcher (matching the dev dashboard layout)
+- [X] **Sticky changelog header**: Make the "Changelog" h1 and "All notable changes to {repo}" subtitle sticky at the top when the user scrolls down
+- [X] **Windows scrollbar styling**: Style scrollbars on Windows to match macOS thin overlay scrollbars
+- [X] **Editor page scroll**: On `/changelogs/[id]`, only the changelog entries section should scroll, not the entire page (header should stay fixed)
 
 ## Deferred (cross-phase)
 

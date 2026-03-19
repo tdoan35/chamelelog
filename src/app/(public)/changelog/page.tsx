@@ -36,8 +36,8 @@ export default async function ChangelogPage({
     : null;
 
   return (
-    <div className="mx-auto max-w-3xl px-8 py-10">
-      <div>
+    <div className="mx-auto max-w-3xl px-8 pb-10">
+      <div className="sticky top-0 z-10 bg-background pt-10 pb-6">
         <h1
           className="font-display text-[28px] font-extrabold text-text-primary"
           style={{ letterSpacing: "-0.5px" }}

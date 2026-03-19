@@ -339,7 +339,7 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
   return (
     <div className="flex flex-col gap-6">
       {/* Header */}
-      <div className="flex flex-col gap-4">
+      <div className="sticky top-0 z-10 bg-background pb-6 flex flex-col gap-4">
         <div className="flex items-start justify-between gap-4">
           <div className="flex min-w-0 flex-1 flex-col gap-2">
             <div className="flex items-center gap-3">

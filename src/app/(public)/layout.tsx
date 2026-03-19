@@ -25,7 +25,7 @@ export default async function PublicLayout({
   });
 
   return (
-    <div className="flex min-h-screen">
+    <div className="flex h-screen overflow-hidden">
       <Suspense>
         <ProjectSidebar projects={projects} />
       </Suspense>
