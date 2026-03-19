@@ -43,6 +43,7 @@ model User {
   sessions      Session[]
   projects      Project[]
   changelogs    Changelog[]
+  preferences   UserPreferences?
 }
 
 model VerificationToken {
@@ -65,6 +66,14 @@ model Project {
   updatedAt  DateTime    @updatedAt
 
   @@unique([userId, repoOwner, repoName])
+}
+
+model UserPreferences {
+  id               String @id @default(cuid())
+  userId           String @unique
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultTone      String @default("technical")
+  defaultDateRange String @default("last-release")
 }
 
 model Changelog {
