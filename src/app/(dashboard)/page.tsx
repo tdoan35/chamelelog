@@ -86,8 +86,11 @@ export default async function DashboardPage({
         </h1>
         <Link
           href="/changelogs/new"
-          className="inline-flex items-center gap-1.5 rounded-md bg-accent px-4 py-2 text-[13px] font-medium text-accent-text transition-colors hover:bg-accent-hover"
-          style={{ boxShadow: "0 0 16px 2px #10B98130" }}
+          className="inline-flex items-center gap-1.5 rounded-md px-4 py-2 text-[13px] font-medium text-white transition-opacity hover:opacity-90"
+          style={{
+            background: "linear-gradient(135deg, #10B981, #3B82F6)",
+            boxShadow: "0 0 16px 2px #10B98130",
+          }}
         >
           <Plus className="h-4 w-4" />
           Generate new
