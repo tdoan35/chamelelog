@@ -25,7 +25,7 @@ import { triggerThemeTransition } from "@/lib/theme-transition";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 const navItems = [
-  { href: "/", label: "Changelogs", icon: List },
+  { href: "/changelogs", label: "Changelogs", icon: List },
   { href: "/changelogs/new", label: "Generate new", icon: CirclePlus },
   { href: "/settings", label: "Settings", icon: Settings },
 ];
@@ -136,8 +136,8 @@ export function Sidebar() {
             <div className="flex flex-col gap-0.5">
               {navItems.map((item) => {
                 const isActive =
-                  item.href === "/"
-                    ? pathname === "/"
+                  item.href === "/changelogs"
+                    ? pathname === "/changelogs"
                     : pathname.startsWith(item.href);
                 return (
                   <Link
@@ -270,7 +270,7 @@ export function Sidebar() {
                     <button
                       onClick={() => {
                         setUserMenuOpen(false);
-                        signOut({ callbackUrl: "/login" });
+                        signOut({ callbackUrl: "/" });
                       }}
                       className="flex w-full items-center gap-2 px-3 py-2.5 text-[13px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
                     >
