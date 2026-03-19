@@ -76,14 +76,21 @@ export function ChangelogList({
                   <span>{changelog.commitCount} commits</span>
                 </div>
               </div>
-              <span
-                className={cn(
-                  "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
-                  status.className
+              <div className="flex shrink-0 items-center gap-2">
+                {changelog.status === "pending_review" && (
+                  <span className="inline-flex items-center rounded-full border border-purple-500/20 bg-purple-500/10 px-2 py-0.5 text-[10px] font-medium text-purple-400">
+                    Auto-generated
+                  </span>
                 )}
-              >
-                {status.label}
-              </span>
+                <span
+                  className={cn(
+                    "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
+                    status.className
+                  )}
+                >
+                  {status.label}
+                </span>
+              </div>
             </div>
           </Link>
         );

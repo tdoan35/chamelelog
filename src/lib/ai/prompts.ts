@@ -11,6 +11,7 @@ RULES:
 4. Exclude commits that are purely internal: test-only changes, refactors with no user-facing impact, documentation updates, dependency bumps that don't change behavior.
 5. When in doubt between "feature" and "improvement", ask: does this add something that didn't exist before (feature) or make something existing better (improvement)?
 6. Pay attention to the FILES CHANGED, not just the commit message. A commit message saying "refactor" that changes API response shapes is a BREAKING change.
+7. If ⚠️ BREAKING SIGNALS are provided at the end of the commit list, treat them as strong hints. Commits mentioned in breaking signals should be carefully evaluated for the "breaking" category.
 
 Respond with ONLY valid JSON matching the schema. No markdown, no explanation.`;
 

@@ -85,8 +85,9 @@ export function ChangelogFeed({
         return (
           <div key={cl.id}>
             {/* Date header row with dot — sticky below page header */}
-            <div className="sticky top-[7.5rem] z-[5] -mt-2 pt-2">
-              <div className="flex items-center gap-3 bg-background pb-4">
+            <div className="sticky top-[7.5rem] z-[5] -mt-10">
+              <div className="bg-background pt-10">
+              <div className="flex items-center gap-3 pb-4">
               <div className="flex w-7 shrink-0 items-center justify-center">
                 <div className="h-2.5 w-2.5 rounded-full bg-accent" />
               </div>
@@ -103,6 +104,7 @@ export function ChangelogFeed({
                   {cl.version}
                 </span>
               )}
+              </div>
               </div>
               <div className="h-4 bg-gradient-to-b from-background to-transparent" />
             </div>
@@ -131,7 +133,7 @@ export function ChangelogFeed({
                             key={i}
                             title={entry.title}
                             description={entry.description}
-                            category={entry.category}
+                            category={entry.category ?? cat.category}
                           />
                         ))}
                       </div>

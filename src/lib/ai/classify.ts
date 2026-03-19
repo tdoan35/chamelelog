@@ -46,14 +46,71 @@ ${files}`;
     .join("\n\n---\n\n");
 }
 
+export function detectBreakingSignals(commits: CommitData[]): string[] {
+  const signals: string[] = [];
+
+  for (const commit of commits) {
+    const msg = commit.message.toLowerCase();
+
+    // Commit message signals
+    if (/breaking[- ]?change/i.test(commit.message) || msg.includes("!:")) {
+      signals.push(
+        `Commit ${commit.sha.slice(0, 7)}: message contains breaking change indicator`,
+      );
+    }
+
+    for (const file of commit.filesChanged) {
+      // Deleted public files
+      if (file.status === "removed") {
+        signals.push(
+          `Commit ${commit.sha.slice(0, 7)}: deleted file ${file.filename}`,
+        );
+      }
+
+      // API route changes (renamed/removed)
+      if (
+        file.filename.match(/\bapi\b/) &&
+        (file.status === "removed" || file.status === "renamed")
+      ) {
+        signals.push(
+          `Commit ${commit.sha.slice(0, 7)}: API route ${file.status} — ${file.filename}`,
+        );
+      }
+
+      // Schema changes
+      if (file.filename.match(/schema\.(prisma|graphql|sql|ts)$/)) {
+        signals.push(
+          `Commit ${commit.sha.slice(0, 7)}: schema file modified — ${file.filename}`,
+        );
+      }
+
+      // Large deletions (>50 lines removed with few added)
+      if (file.deletions > 50 && file.additions < file.deletions * 0.3) {
+        signals.push(
+          `Commit ${commit.sha.slice(0, 7)}: large deletion in ${file.filename} (-${file.deletions} lines)`,
+        );
+      }
+    }
+  }
+
+  return signals;
+}
+
 export async function classifyCommits(
   commits: CommitData[],
 ): Promise<ClassificationResult> {
+  const breakingSignals = detectBreakingSignals(commits);
+  let prompt = formatCommitsForClassification(commits);
+
+  if (breakingSignals.length > 0) {
+    prompt += `\n\n⚠️ BREAKING SIGNALS:\n${breakingSignals.map((s) => `- ${s}`).join("\n")}`;
+  }
+
   const { object } = await generateObject({
     model,
     schema: ClassificationSchema,
     system: CLASSIFY_SYSTEM_PROMPT,
-    prompt: formatCommitsForClassification(commits),
+    prompt,
   });
 
   return object;

@@ -1,6 +1,12 @@
+import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { ChangelogFeed } from "@/components/public/changelog-feed";
 import { FileText } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "Changelog",
+  description: "All notable changes and releases",
+};
 
 export default async function ChangelogPage({
   searchParams,
