@@ -17,7 +17,7 @@ export function FilterTabs({ active }: { active: string }) {
         return (
           <Link
             key={tab.value}
-            href={tab.value === "all" ? "/" : `/?filter=${tab.value}`}
+            href={tab.value === "all" ? "/changelogs" : `/changelogs?filter=${tab.value}`}
             className={cn(
               "rounded-md px-3 py-1.5 text-[13px] transition-colors",
               isActive

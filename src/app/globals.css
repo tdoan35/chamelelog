@@ -224,3 +224,9 @@ html.theme-transition *:not([data-theme-toggle] button)::after {
 [data-theme-toggle] * {
   transition: none !important;
 }
+
+/* Thin scrollbars — matches macOS overlay style on Windows/Linux */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-primary) transparent;
+}

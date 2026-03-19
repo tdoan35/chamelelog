@@ -52,7 +52,7 @@ This is a server component that fetches all published changelogs and renders the
    - Each entry is a card with: colored left border (3px), category-tinted background fill (e.g., `#10B98108` for features, `#F59E0B08` for fixes, `#3B82F608` for improvements), `rounded-lg`
    - Card content: title (14px medium) + description (13px secondary, 1.5 line-height)
 
-4. **Mobile** (see design screen 09, 390px):
+4. **Mobile** (see design screen 09, 390px) — **DEFERRED** (tracked in `docs/todos/phase4.md`):
    - Sidebar collapses to a top bar: gradient logo icon + "Chamelelog" + hamburger menu icon
    - No timeline line — entries stack vertically with date headers
    - Filter pills become horizontal scrollable row
@@ -229,8 +229,8 @@ For authenticated users, redirect to the dashboard.
 - [ ] Entry cards have colored left borders and category-tinted backgrounds
 - [ ] RSS feed at `/api/feed/rss` is valid XML and auto-discoverable
 - [ ] JSON feed at `/api/feed/json` follows the JSON Feed spec
-- [ ] Public page looks beautiful on both desktop and mobile
-- [ ] Mobile: sidebar collapses to top bar, entries stack without timeline
+- [ ] Public page looks beautiful on desktop
+- [ ] *(Deferred)* Mobile: sidebar collapses to top bar, entries stack without timeline
 - [ ] The page is server-rendered (check: view source shows content)
 - [ ] Empty state when no changelogs are published
 - [ ] Landing page: mesh gradient bg, gradient "changelogs" text, green CTA with glow
