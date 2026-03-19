@@ -10,6 +10,8 @@ import {
   Trash2,
   Plus,
   ArrowRight,
+  ChevronDown,
+  ChevronRight,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -62,6 +64,22 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
   const [addingTo, setAddingTo] = useState<string | null>(null);
   const [newEntryTitle, setNewEntryTitle] = useState("");
   const [newEntryDesc, setNewEntryDesc] = useState("");
+  const [collapsedSections, setCollapsedSections] = useState<Set<string>>(
+    new Set(),
+  );
+  const [openMoveMenu, setOpenMoveMenu] = useState<string | null>(null);
+
+  const toggleSection = (category: string) => {
+    setCollapsedSections((prev) => {
+      const next = new Set(prev);
+      if (next.has(category)) {
+        next.delete(category);
+      } else {
+        next.add(category);
+      }
+      return next;
+    });
+  };
 
   // Get all categories, including empty ones in order
   const orderedCategories = useMemo(() => {
@@ -73,7 +91,9 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
           entries: [],
         },
     ).filter(
-      (cat) => cat.entries.length > 0 || categories.some((c) => c.category === cat.category),
+      (cat) =>
+        cat.entries.length > 0 ||
+        categories.some((c) => c.category === cat.category),
     );
   }, [categories]);
 
@@ -119,6 +139,14 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
     };
   }, []);
 
+  // Close move menu on outside click
+  useEffect(() => {
+    if (!openMoveMenu) return;
+    const handler = () => setOpenMoveMenu(null);
+    window.addEventListener("click", handler);
+    return () => window.removeEventListener("click", handler);
+  }, [openMoveMenu]);
+
   const updateEntry = (
     catIdx: number,
     entryIdx: number,
@@ -158,6 +186,7 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
     entryIdx: number,
     toCategoryName: string,
   ) => {
+    setOpenMoveMenu(null);
     setCategories((prev) => {
       const entry = prev[fromCatIdx].entries[entryIdx];
       const movedEntry: ChangelogEntry = {
@@ -320,6 +349,21 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
                 className="min-w-0 flex-1 border-none bg-transparent font-display text-[22px] font-bold text-text-primary outline-none placeholder:text-text-tertiary"
                 placeholder="Changelog title"
               />
+              {/* Save indicator — left of status badge */}
+              <span className="flex shrink-0 items-center gap-1 text-[12px] text-text-tertiary">
+                {saveState === "saving" && (
+                  <>
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                    Saving...
+                  </>
+                )}
+                {saveState === "saved" && (
+                  <>
+                    <Check className="h-3 w-3 text-emerald-500" />
+                    <span className="text-emerald-500">Saved</span>
+                  </>
+                )}
+              </span>
               <span
                 className={cn(
                   "inline-flex shrink-0 items-center rounded-full px-2 py-0.5 text-[11px] font-medium",
@@ -344,22 +388,6 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {/* Save indicator */}
-            <span className="flex items-center gap-1 text-[12px] text-text-tertiary">
-              {saveState === "saving" && (
-                <>
-                  <Loader2 className="h-3 w-3 animate-spin" />
-                  Saving...
-                </>
-              )}
-              {saveState === "saved" && (
-                <>
-                  <Check className="h-3 w-3 text-emerald-500" />
-                  <span className="text-emerald-500">Saved</span>
-                </>
-              )}
-            </span>
-
             {/* Version input */}
             <input
               value={version}
@@ -402,17 +430,26 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
 
       {/* Category sections */}
       <div className="flex flex-col gap-8">
-        {orderedCategories.map((cat, catIdx) => {
+        {orderedCategories.map((cat) => {
           const colors = CATEGORY_COLORS[cat.category];
           const actualCatIdx = categories.findIndex(
             (c) => c.category === cat.category,
           );
+          const isCollapsed = collapsedSections.has(cat.category);
 
           return (
             <div key={cat.category} className="flex flex-col gap-3">
               {/* Category header */}
               <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
+                <button
+                  onClick={() => toggleSection(cat.category)}
+                  className="flex items-center gap-2.5 transition-colors hover:opacity-80"
+                >
+                  {isCollapsed ? (
+                    <ChevronRight className="h-4 w-4 text-text-tertiary" />
+                  ) : (
+                    <ChevronDown className="h-4 w-4 text-text-tertiary" />
+                  )}
                   <div
                     className="h-4 w-[3px] rounded-full"
                     style={{ backgroundColor: colors?.color }}
@@ -431,7 +468,7 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
                       {cat.entries.length}
                     </span>
                   )}
-                </div>
+                </button>
                 <button
                   onClick={() =>
                     setAddingTo(
@@ -444,107 +481,118 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
                 </button>
               </div>
 
-              {/* Entry cards */}
-              {cat.entries.map((entry, entryIdx) => (
-                <div
-                  key={entryIdx}
-                  className="group overflow-hidden rounded-lg border border-border-primary"
-                  style={{ backgroundColor: colors?.bg }}
-                >
-                  <div className="flex">
+              {/* Entry cards — collapsible */}
+              {!isCollapsed &&
+                cat.entries.map((entry, entryIdx) => {
+                  const moveKey = `${cat.category}-${entryIdx}`;
+                  return (
                     <div
-                      className="w-[3px] shrink-0"
-                      style={{ backgroundColor: colors?.color }}
-                    />
-                    <div className="flex flex-1 flex-col gap-1 px-4 py-3">
-                      <div className="flex items-start justify-between gap-2">
-                        <input
-                          value={entry.title}
-                          onChange={(e) =>
-                            actualCatIdx >= 0 &&
-                            updateEntry(
-                              actualCatIdx,
-                              entryIdx,
-                              "title",
-                              e.target.value,
-                            )
-                          }
-                          className="min-w-0 flex-1 border-none bg-transparent text-[14px] font-medium text-text-primary outline-none placeholder:text-text-tertiary"
+                      key={entryIdx}
+                      className="group relative overflow-visible rounded-lg border border-border-primary"
+                      style={{ backgroundColor: colors?.bg }}
+                    >
+                      <div className="flex">
+                        <div
+                          className="w-[3px] shrink-0 rounded-l-lg"
+                          style={{ backgroundColor: colors?.color }}
                         />
-                        <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
-                          {/* Move dropdown */}
-                          <div className="relative">
-                            <button
-                              onClick={(e) => {
-                                const btn = e.currentTarget;
-                                const menu =
-                                  btn.nextElementSibling as HTMLElement;
-                                menu.classList.toggle("hidden");
-                              }}
-                              className="inline-flex h-6 w-6 items-center justify-center rounded text-text-tertiary transition-colors hover:bg-surface-hover hover:text-text-secondary"
-                              title="Move to..."
-                            >
-                              <ArrowRight className="h-3.5 w-3.5" />
-                            </button>
-                            <div className="absolute right-0 top-full z-10 mt-1 hidden w-40 overflow-hidden rounded-lg border border-border-primary bg-surface shadow-lg">
-                              {CATEGORY_ORDER.filter(
-                                (c) => c !== cat.category,
-                              ).map((targetCat) => (
+                        <div className="flex flex-1 flex-col gap-1 px-4 py-3">
+                          <div className="flex items-start justify-between gap-2">
+                            <input
+                              value={entry.title}
+                              onChange={(e) =>
+                                actualCatIdx >= 0 &&
+                                updateEntry(
+                                  actualCatIdx,
+                                  entryIdx,
+                                  "title",
+                                  e.target.value,
+                                )
+                              }
+                              className="min-w-0 flex-1 border-none bg-transparent text-[14px] font-medium text-text-primary outline-none placeholder:text-text-tertiary"
+                            />
+                            <div className="flex shrink-0 items-center gap-1 opacity-0 transition-opacity group-hover:opacity-100">
+                              {/* Move dropdown */}
+                              <div className="relative">
                                 <button
-                                  key={targetCat}
-                                  onClick={() => {
-                                    if (actualCatIdx >= 0)
-                                      moveEntry(
-                                        actualCatIdx,
-                                        entryIdx,
-                                        targetCat,
-                                      );
+                                  onClick={(e) => {
+                                    e.stopPropagation();
+                                    setOpenMoveMenu(
+                                      openMoveMenu === moveKey
+                                        ? null
+                                        : moveKey,
+                                    );
                                   }}
-                                  className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+                                  className="inline-flex h-6 w-6 items-center justify-center rounded text-text-tertiary transition-colors hover:bg-surface-hover hover:text-text-secondary"
+                                  title="Move to..."
                                 >
-                                  <div
-                                    className="h-2.5 w-2.5 rounded-full"
-                                    style={{
-                                      backgroundColor:
-                                        CATEGORY_COLORS[targetCat]?.color,
-                                    }}
-                                  />
-                                  {CATEGORY_COLORS[targetCat]?.label}
+                                  <ArrowRight className="h-3.5 w-3.5" />
                                 </button>
-                              ))}
+                                {openMoveMenu === moveKey && (
+                                  <div
+                                    className="absolute bottom-full right-0 z-50 mb-1 w-40 overflow-hidden rounded-lg border border-border-primary bg-surface shadow-lg"
+                                    onClick={(e) => e.stopPropagation()}
+                                  >
+                                    {CATEGORY_ORDER.filter(
+                                      (c) => c !== cat.category,
+                                    ).map((targetCat) => (
+                                      <button
+                                        key={targetCat}
+                                        onClick={() => {
+                                          if (actualCatIdx >= 0)
+                                            moveEntry(
+                                              actualCatIdx,
+                                              entryIdx,
+                                              targetCat,
+                                            );
+                                        }}
+                                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-[13px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+                                      >
+                                        <div
+                                          className="h-2.5 w-2.5 rounded-full"
+                                          style={{
+                                            backgroundColor:
+                                              CATEGORY_COLORS[targetCat]?.color,
+                                          }}
+                                        />
+                                        {CATEGORY_COLORS[targetCat]?.label}
+                                      </button>
+                                    ))}
+                                  </div>
+                                )}
+                              </div>
+
+                              <button
+                                onClick={() =>
+                                  actualCatIdx >= 0 &&
+                                  deleteEntry(actualCatIdx, entryIdx)
+                                }
+                                className="inline-flex h-6 w-6 items-center justify-center rounded text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-500"
+                                title="Delete"
+                              >
+                                <Trash2 className="h-3.5 w-3.5" />
+                              </button>
                             </div>
                           </div>
-
-                          <button
-                            onClick={() =>
+                          <input
+                            value={entry.description ?? ""}
+                            onChange={(e) =>
                               actualCatIdx >= 0 &&
-                              deleteEntry(actualCatIdx, entryIdx)
+                              updateEntry(
+                                actualCatIdx,
+                                entryIdx,
+                                "description",
+                                e.target.value,
+                              )
                             }
-                            className="inline-flex h-6 w-6 items-center justify-center rounded text-text-tertiary transition-colors hover:bg-red-500/10 hover:text-red-500"
-                            title="Delete"
-                          >
-                            <Trash2 className="h-3.5 w-3.5" />
-                          </button>
+                            placeholder="Add a description..."
+                            className="min-w-0 border-none bg-transparent text-[13px] leading-relaxed text-text-secondary outline-none placeholder:text-text-tertiary"
+                          />
                         </div>
                       </div>
-                      <input
-                        value={entry.description ?? ""}
-                        onChange={(e) =>
-                          actualCatIdx >= 0 &&
-                          updateEntry(
-                            actualCatIdx,
-                            entryIdx,
-                            "description",
-                            e.target.value,
-                          )
-                        }
-                        placeholder="Add a description..."
-                        className="min-w-0 border-none bg-transparent text-[13px] leading-relaxed text-text-secondary outline-none placeholder:text-text-tertiary"
-                      />
                     </div>
-                  </div>
-                </div>
-              ))}
+                  );
+                })}
 
               {/* Inline add form */}
               {addingTo === cat.category && (
@@ -571,15 +619,7 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
                         if (e.key === "Escape") setAddingTo(null);
                       }}
                     />
-                    <div className="flex items-center gap-2 pt-1">
-                      <button
-                        onClick={() => addEntry(cat.category)}
-                        disabled={!newEntryTitle.trim()}
-                        className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-[13px] font-medium text-accent-text transition-colors hover:bg-accent-hover disabled:opacity-50"
-                      >
-                        <Plus className="h-3.5 w-3.5" />
-                        Add
-                      </button>
+                    <div className="flex items-center justify-end gap-2 pt-1">
                       <button
                         onClick={() => {
                           setAddingTo(null);
@@ -589,6 +629,14 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
                         className="rounded-md px-3 py-1.5 text-[13px] text-text-secondary transition-colors hover:text-text-primary"
                       >
                         Cancel
+                      </button>
+                      <button
+                        onClick={() => addEntry(cat.category)}
+                        disabled={!newEntryTitle.trim()}
+                        className="inline-flex items-center gap-1.5 rounded-md bg-accent px-3 py-1.5 text-[13px] font-medium text-accent-text transition-colors hover:bg-accent-hover disabled:opacity-50"
+                      >
+                        <Plus className="h-3.5 w-3.5" />
+                        Add
                       </button>
                     </div>
                   </div>

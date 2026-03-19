@@ -385,10 +385,18 @@ export default function GeneratePage() {
         onClose={() => setConnectDialogOpen(false)}
         onSuccess={() => {
           setConnectDialogOpen(false);
-          // Refresh projects
+          // Refresh projects and auto-select the newly added one
+          const existingIds = new Set(projects.map((p) => p.id));
           fetch("/api/projects")
             .then((res) => res.json())
-            .then((data) => setProjects(data.data ?? []));
+            .then((data) => {
+              const updated: Project[] = data.data ?? [];
+              setProjects(updated);
+              const newProject = updated.find((p) => !existingIds.has(p.id));
+              if (newProject) {
+                setSelectedProject(newProject);
+              }
+            });
         }}
       />
     </div>
