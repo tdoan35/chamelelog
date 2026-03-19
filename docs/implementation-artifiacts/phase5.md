@@ -1,16 +1,128 @@
-# Phase 5: Polish + Nice-to-Haves
+# Phase 5: Dashboard Settings + Polish
 
 ## Deliverable
 
-The app is submission-ready: all nice-to-have features that time allows are implemented, the README is complete, edge cases are handled, and the app is ready for a screen recording.
+The dashboard settings page is fully functional, and all remaining nice-to-have features that time allows are implemented. The app is submission-ready with a complete README, handled edge cases, and ready for a screen recording.
 
 ## Dependencies
 
 Phases 1-4 must be complete and working end-to-end.
 
+## Design Reference
+
+Design screens `12` (dark) and `12L` (light) in `docs/design/chamelelog-design.pen`.
+
+---
+
+## Dashboard: Settings Page
+
+### 5.0a — Settings page shell
+
+Create `src/app/(dashboard)/settings/page.tsx`:
+
+Server component that fetches the current user's account info, connected projects, and user preferences. Requires authentication (redirect to `/login` if unauthenticated). Uses the existing dashboard layout — the sidebar already links to `/settings`.
+
+**Layout** — scrollable single-column content:
+- Header: "Settings" in DM Sans 700 24px (`$text-primary`)
+- Four card sections stacked vertically with 32px gap (`settingsScroll`)
+- Content area padding: 32px top/bottom, 40px left/right
+
+### 5.0b — Linked Account section
+
+Displays the authenticated user's GitHub identity.
+
+**Section title**: "Linked Account" in 16px DM Sans 600
+
+**Card** (`cornerRadius: 8`, `fill: #0F0F0F` dark / `#FFFFFF` light, `border: 1px #262626` dark / `#E4E4E7` light, `padding: 20px`, `gap: 16px` vertical):
+- **Account row** (space-between, full width):
+  - Left group (`gap: 12px`): avatar (40px rounded square, `#2A2A2A` placeholder bg), name (14px Inter 500 `$text-primary`), email (13px Inter 400 `$text-secondary`), GitHub badge (pill: `#10B98120` bg, `cornerRadius: 12`, `padding: 4px 10px`)
+  - Right: "Sign out" button (13px Inter 500 `#A3A3A3` text, `border: 1px #262626`, `cornerRadius: 6`, `padding: 8px 16px`, no fill)
+- **Note text**: "Authenticated via GitHub OAuth. Your access token is used to fetch commits from connected repositories." — 12px Inter 400 `#6B6B6B`, full width
+
+Data source: `session.user` for name/email/image. Sign out action calls `signOut()` from next-auth.
+
+### 5.0c — Connected Repository section
+
+Shows the user's connected project(s).
+
+**Section title**: "Connected Repository" in 16px DM Sans 600
+
+**Card** (same card style as above, `gap: 20px`):
+- **Repo row** (space-between, full width):
+  - Left group (`gap: 12px`): `git-branch` icon (20px, `$accent-green`) + text group: repo name `owner/repo` (14px Inter 500 `$text-primary`) + status "Connected · Last synced X ago" (12px Inter 400 `$text-tertiary`)
+  - Right: "Disconnect" button (13px Inter 500 `$accent-red` text, `border: 1px $border`, `cornerRadius: 6`, `padding: 8px 16px`)
+
+Data source: `db.project.findMany({ where: { userId } })`. If no projects, show empty state.
+
+**Disconnect action**: `DELETE /api/projects/[id]` — deletes the project and all its changelogs (Prisma cascade). Show a confirmation dialog before proceeding.
+
+### 5.0d — Default Generation Preferences section
+
+Lets the user configure defaults that pre-fill the "Generate new" form.
+
+**Section title**: "Default Generation Preferences" in 16px DM Sans 600
+
+**Card** (same card style, `gap: 20px`):
+- **Description**: "These defaults will be pre-filled when generating a new changelog. You can always override them per generation." — 13px Inter 400 `#6B6B6B`, full width
+- **Default tone field** (`gap: 8px` vertical, full width):
+  - Label: "Default tone" — 13px Inter 400 `#A3A3A3`
+  - Select: `cornerRadius: 8`, `fill: #0A0A0A`, `border: 1px #262626`, `padding: 10px 14px`, text 13px Inter 400 `#F5F5F5`, chevron-down icon 14px `#6B6B6B`
+  - Options: "Technical", "Casual", "Marketing", "Minimal"
+- **Default date range field** (same layout):
+  - Options: "Since last release", "Last 7 days", "Last 30 days", "Custom"
+- **Button row** (right-aligned):
+  - "Save defaults" button: green→blue gradient fill (`#10B981` → `#3B82F6`, 225°), green glow shadow (`#10B98130`, blur 12, spread 2), `cornerRadius: 6`, `padding: 8px 16px`, text 13px Inter 500 `#022C22`
+
+**Schema change** — add `UserPreferences` model:
+
+```prisma
+model User {
+  // ... existing fields
+  preferences UserPreferences?
+}
+
+model UserPreferences {
+  id               String @id @default(cuid())
+  userId           String @unique
+  user             User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  defaultTone      String @default("technical")
+  defaultDateRange String @default("since_last_release")
+}
+```
+
+Run `npx prisma migrate dev --name add-user-preferences`.
+
+**API**: `PUT /api/settings/preferences` — authenticate, validate `{ defaultTone, defaultDateRange }`, upsert `UserPreferences`.
+
+### 5.0e — Danger Zone section
+
+**Section title**: "Danger Zone" in 16px DM Sans 600 `$accent-red`
+
+**Card** (`fill: $accent-red-bg` (`#FEF2F2` light), `border: 1px $accent-red` (`#EF4444`), `cornerRadius: 8`, `padding: 20px`, `gap: 16px`):
+- **Row** (space-between, full width):
+  - Left group (`gap: 4px` vertical): "Delete this project" (14px Inter 500 `$text-primary`) + description "Once you delete a project, there is no going back. All changelogs will be permanently removed." (13px Inter 400 `$text-secondary`, max-width ~600px)
+  - Right: red delete button (`fill: $accent-red`, `cornerRadius: 6`, `padding: 8px 16px`, `gap: 6px`): `trash-2` icon (14px white) + "Delete project" (13px Inter 500 white)
+
+**Delete action**: `DELETE /api/projects/[id]`. Confirmation dialog requiring project name to confirm. On success, redirect to `/changelogs`.
+
+### 5.0f — API routes for settings
+
+**`DELETE /api/projects/[id]/route.ts`** (new handler in existing route file):
+- Authenticate user, verify project ownership (`project.userId === user.id`)
+- Delete project (Prisma cascade handles changelogs)
+- Return 204 No Content
+
+**`PUT /api/settings/preferences/route.ts`** (new):
+- Authenticate user
+- Validate body with Zod: `{ defaultTone: z.enum([...]), defaultDateRange: z.enum([...]) }`
+- Upsert `UserPreferences` for user
+- Return updated preferences
+
+---
+
 ## Nice-to-have features (implement in order, stop when time runs out)
 
-Each feature below is self-contained. Implement them in priority order. The project is submission-ready after Phase 4 — everything here is bonus.
+Each feature below is self-contained. Implement them in priority order. The project is submission-ready after the Settings page — everything below is bonus.
 
 ---
 
