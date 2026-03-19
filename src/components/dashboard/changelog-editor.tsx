@@ -6,12 +6,14 @@ import {
   Check,
   Loader2,
   Download,
+  Copy,
   Send,
   Trash2,
   Plus,
   ArrowRight,
   ChevronDown,
   ChevronRight,
+  RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
 import { cn } from "@/lib/utils";
@@ -68,6 +70,8 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
     new Set(),
   );
   const [openMoveMenu, setOpenMoveMenu] = useState<string | null>(null);
+  const [regenerating, setRegenerating] = useState(false);
+  const [showToneMenu, setShowToneMenu] = useState(false);
 
   const toggleSection = (category: string) => {
     setCollapsedSections((prev) => {
@@ -139,13 +143,16 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
     };
   }, []);
 
-  // Close move menu on outside click
+  // Close move menu / tone menu on outside click
   useEffect(() => {
-    if (!openMoveMenu) return;
-    const handler = () => setOpenMoveMenu(null);
+    if (!openMoveMenu && !showToneMenu) return;
+    const handler = () => {
+      setOpenMoveMenu(null);
+      setShowToneMenu(false);
+    };
     window.addEventListener("click", handler);
     return () => window.removeEventListener("click", handler);
-  }, [openMoveMenu]);
+  }, [openMoveMenu, showToneMenu]);
 
   const updateEntry = (
     catIdx: number,
@@ -307,6 +314,72 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
     URL.revokeObjectURL(url);
   };
 
+  const handleCopyMarkdown = async () => {
+    const markdown = contentToMarkdown(categories);
+    const fullMarkdown = `# ${version || title} — ${format(new Date(changelog.toDate), "MMMM d, yyyy")}\n\n${markdown}`;
+    await navigator.clipboard.writeText(fullMarkdown);
+    toast.success("Copied to clipboard", {
+      description: "Markdown copied — paste it anywhere.",
+    });
+  };
+
+  // Semantic version suggestion — only show when version field is empty
+  const suggestedVersion = useMemo(() => {
+    if (version) return null;
+
+    const totalEntries = categories.reduce((sum, c) => sum + c.entries.length, 0);
+    if (totalEntries === 0) return null;
+
+    const hasBreaking = categories.some(
+      (c) => c.category === "breaking" && c.entries.length > 0,
+    );
+    const hasFeatures = categories.some(
+      (c) => c.category === "features" && c.entries.length > 0,
+    );
+
+    let suggested: string;
+    let reason: string;
+    if (hasBreaking) {
+      suggested = "v1.0.0";
+      reason = "breaking changes detected";
+    } else if (hasFeatures) {
+      suggested = "v0.1.0";
+      reason = "new features detected";
+    } else {
+      suggested = "v0.0.1";
+      reason = "bug fixes / improvements";
+    }
+
+    return { suggested, reason };
+  }, [categories, version]);
+
+  // Tone regeneration
+  const handleRegenerate = async (tone: string) => {
+    setShowToneMenu(false);
+    setRegenerating(true);
+    try {
+      const res = await fetch(`/api/changelogs/${changelog.id}/regenerate`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tone }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error ?? "Regeneration failed");
+      }
+      const { data } = await res.json();
+      const newCategories = parseContent(data.content);
+      setCategories(newCategories);
+      toast.success("Regenerated", {
+        description: `Changelog rewritten in ${tone} tone.`,
+      });
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Regeneration failed");
+    } finally {
+      setRegenerating(false);
+    }
+  };
+
   // Listen for publish shortcut
   useEffect(() => {
     const handler = () => {
@@ -388,20 +461,83 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
           </div>
 
           <div className="flex shrink-0 items-center gap-2">
-            {/* Version input */}
-            <input
-              value={version}
-              onChange={(e) => handleVersionChange(e.target.value)}
-              placeholder="v0.0.0"
-              className="w-20 rounded-md border border-border-primary bg-surface px-2 py-1.5 font-mono text-[11px] text-text-secondary outline-none placeholder:text-text-tertiary focus:border-accent"
-            />
+            {/* Version input + suggestion */}
+            <div className="relative">
+              <input
+                value={version}
+                onChange={(e) => handleVersionChange(e.target.value)}
+                placeholder="v0.0.0"
+                className="w-20 rounded-md border border-border-primary bg-surface px-2 py-1.5 font-mono text-[11px] text-text-secondary outline-none placeholder:text-text-tertiary focus:border-accent"
+              />
+              {suggestedVersion && (
+                <button
+                  onClick={() => {
+                    setVersion(suggestedVersion.suggested);
+                    scheduleSave(categories, title, suggestedVersion.suggested);
+                  }}
+                  className="absolute top-full right-0 mt-1 whitespace-nowrap rounded-md border border-border-primary bg-surface px-2 py-1 text-[10px] text-text-tertiary shadow-sm transition-colors hover:text-accent"
+                  title={suggestedVersion.reason}
+                >
+                  Suggested: {suggestedVersion.suggested}
+                </button>
+              )}
+            </div>
+
+            {/* Tone regeneration */}
+            <div className="relative">
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  setShowToneMenu(!showToneMenu);
+                }}
+                disabled={regenerating}
+                className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border-primary text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary disabled:opacity-50"
+                title="Regenerate tone"
+              >
+                {regenerating ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <RefreshCw className="h-3.5 w-3.5" />
+                )}
+              </button>
+              {showToneMenu && (
+                <div className="absolute top-full right-0 z-50 mt-1 w-48 overflow-hidden rounded-lg border border-border-primary bg-surface shadow-lg">
+                  {[
+                    { key: "technical", label: "Technical", desc: "Developer-focused" },
+                    { key: "product", label: "Product", desc: "User-facing outcomes" },
+                    { key: "enterprise", label: "Enterprise", desc: "Compliance & security" },
+                  ].map((tone) => (
+                    <button
+                      key={tone.key}
+                      onClick={() => handleRegenerate(tone.key)}
+                      className="flex w-full flex-col px-3 py-2 text-left transition-colors hover:bg-surface-hover"
+                    >
+                      <span className="text-[13px] font-medium text-text-primary">
+                        {tone.label}
+                      </span>
+                      <span className="text-[11px] text-text-tertiary">
+                        {tone.desc}
+                      </span>
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            <button
+              onClick={handleCopyMarkdown}
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border-primary text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+              title="Copy as markdown"
+            >
+              <Copy className="h-3.5 w-3.5" />
+            </button>
 
             <button
               onClick={handleExport}
-              className="inline-flex items-center gap-1.5 rounded-md border border-border-primary px-3 py-1.5 text-[13px] font-medium text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-border-primary text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
+              title="Download as markdown"
             >
               <Download className="h-3.5 w-3.5" />
-              Export
             </button>
 
             {status !== "published" && (
@@ -496,14 +632,14 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
                       return (
                         <div
                           key={entryIdx}
-                          className="group relative overflow-visible rounded-lg border border-border-primary"
-                          style={{ backgroundColor: colors?.bg }}
+                          className="group relative overflow-hidden rounded-lg border border-border-primary"
+                          style={{
+                            backgroundColor: colors?.bg,
+                            borderLeftWidth: "3px",
+                            borderLeftColor: colors?.color,
+                          }}
                         >
                           <div className="flex">
-                            <div
-                              className="w-[3px] shrink-0 rounded-l-lg"
-                              style={{ backgroundColor: colors?.color }}
-                            />
                             <div className="flex flex-1 flex-col gap-1 px-4 py-3">
                               <div className="flex items-start justify-between gap-2">
                                 <input

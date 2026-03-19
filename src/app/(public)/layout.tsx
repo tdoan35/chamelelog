@@ -2,7 +2,7 @@ import { Suspense } from "react";
 import type { Metadata } from "next";
 import { db } from "@/lib/db";
 import { ProjectSidebar } from "@/components/public/project-sidebar";
-import { ChatFab } from "@/components/public/chat-fab";
+import { ChatWidget } from "@/components/public/chat-widget";
 
 export const metadata: Metadata = {
   alternates: {
@@ -30,7 +30,7 @@ export default async function PublicLayout({
         <ProjectSidebar projects={projects} />
       </Suspense>
       <main className="flex-1 overflow-auto">{children}</main>
-      <ChatFab />
+      <ChatWidget />
     </div>
   );
 }

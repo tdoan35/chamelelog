@@ -23,8 +23,17 @@ const jetbrainsMono = JetBrains_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Chamelelog",
+  title: {
+    default: "Chamelelog",
+    template: "%s | Chamelelog",
+  },
   description: "AI-powered changelog generation from Git commits",
+  metadataBase: new URL(process.env.NEXTAUTH_URL ?? "http://localhost:3002"),
+  openGraph: {
+    title: "Chamelelog",
+    description: "AI-powered changelog generation from Git commits",
+    type: "website",
+  },
 };
 
 export default function RootLayout({
