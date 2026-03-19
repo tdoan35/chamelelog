@@ -91,12 +91,7 @@ export function ConnectRepoDialog({
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/[0.38]" onClick={onClose} />
       <div
-        className="relative z-50 flex flex-col overflow-hidden rounded-xl border border-border-primary shadow-2xl"
-        style={{
-          width: 480,
-          backgroundColor: "#141414",
-          boxShadow: "0 8px 32px #00000040",
-        }}
+        className="relative z-50 flex w-[480px] flex-col overflow-hidden rounded-xl border border-border-primary bg-surface shadow-[0_8px_32px_#00000040]"
       >
         {/* Header */}
         <div className="flex items-center justify-between border-b border-border-primary px-5 py-4">
@@ -115,7 +110,7 @@ export function ConnectRepoDialog({
         <div className="flex flex-col gap-5 p-5">
           {/* Search section */}
           <div className="flex flex-col gap-2">
-            <label className="text-[13px] font-medium text-text-secondary">
+            <label className="text-[13px] font-medium text-text-primary">
               Search your repositories
             </label>
             <div className="relative">
@@ -125,7 +120,7 @@ export function ConnectRepoDialog({
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 placeholder="Search repositories..."
-                className="w-full rounded-lg border border-border-primary bg-[#0A0A0A] py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
+                className="w-full rounded-lg border border-border-primary bg-background py-2 pl-9 pr-3 text-sm text-text-primary placeholder:text-text-tertiary focus:border-accent focus:outline-none focus:ring-1 focus:ring-accent"
                 autoFocus
               />
             </div>
@@ -153,16 +148,16 @@ export function ConnectRepoDialog({
                     className={cn(
                       "flex w-full items-center gap-3 rounded-md px-3 py-2.5 text-left transition-colors",
                       isSelected
-                        ? "bg-accent/10 text-accent"
-                        : "text-text-secondary hover:bg-[#1A1A1A] hover:text-text-primary"
+                        ? "bg-accent text-[#022C22]"
+                        : "text-text-secondary hover:bg-surface-hover hover:text-text-primary"
                     )}
                   >
-                    <GitBranch className="h-4 w-4 shrink-0" />
+                    <GitBranch className={cn("h-4 w-4 shrink-0", !isSelected && "text-text-tertiary")} />
                     <span className="flex-1 truncate font-mono text-[13px]">
                       {repo.fullName}
                     </span>
                     {isSelected && (
-                      <Check className="h-4 w-4 shrink-0 text-accent" />
+                      <Check className="h-4 w-4 shrink-0" />
                     )}
                   </button>
                 );

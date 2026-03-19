@@ -1,4 +1,4 @@
-import type { ChangelogCategory } from "@/lib/ai/pipeline";
+import type { ChangelogCategory } from "@/lib/types";
 
 const CATEGORY_LABELS: Record<string, string> = {
   breaking: "🚨 Breaking Changes",
