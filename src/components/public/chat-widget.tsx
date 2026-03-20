@@ -55,7 +55,11 @@ function renderMarkdown(text: string): ReactNode {
   return <div className="flex flex-col gap-0.5">{elements}</div>;
 }
 
-export function ChatWidget() {
+interface ChatWidgetProps {
+  username?: string;
+}
+
+export function ChatWidget({ username }: ChatWidgetProps) {
   const [open, setOpen] = useState(false);     // drives CSS transition state
   const [visible, setVisible] = useState(false); // controls DOM mount
   const [input, setInput] = useState("");
@@ -106,7 +110,7 @@ export function ChatWidget() {
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
     if (!input.trim() || isLoading) return;
-    sendMessage({ text: input.trim() });
+    sendMessage({ text: input.trim() }, { body: { username } });
     setInput("");
   };
 

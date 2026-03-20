@@ -5,11 +5,21 @@ import { db } from "@/lib/db";
 const MAX_CONTEXT_CHARS = 30_000;
 
 export async function POST(req: Request) {
-  const { messages } = await req.json();
+  const { messages, username } = await req.json();
+
+  // Resolve userId from username if provided
+  let userId: string | undefined;
+  if (username) {
+    const user = await db.user.findUnique({ where: { username } });
+    if (user) userId = user.id;
+  }
 
   // Load recent published changelogs as context
   const changelogs = await db.changelog.findMany({
-    where: { status: "published" },
+    where: {
+      status: "published",
+      ...(userId ? { userId } : {}),
+    },
     orderBy: { publishedAt: "desc" },
     take: 20,
     include: { project: true },

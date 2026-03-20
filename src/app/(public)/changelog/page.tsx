@@ -1,80 +1,60 @@
-import type { Metadata } from "next";
+import { redirect } from "next/navigation";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/lib/auth-options";
 import { db } from "@/lib/db";
-import { ChangelogFeed } from "@/components/public/changelog-feed";
 import { FileText } from "lucide-react";
 
-export const metadata: Metadata = {
-  title: "Changelog",
-  description: "All notable changes and releases",
-};
+const DEFAULT_USERNAME = "tdoan35";
 
-export default async function ChangelogPage({
-  searchParams,
-}: {
-  searchParams: Promise<{ category?: string; project?: string }>;
-}) {
-  const params = await searchParams;
-  const category = params.category;
-
-  // Resolve project ID: use param, or fall back to first project with published changelogs
-  let projectId = params.project;
-  if (!projectId) {
-    const defaultProject = await db.project.findFirst({
-      where: { changelogs: { some: { status: "published" } } },
-      orderBy: { createdAt: "desc" },
-      select: { id: true },
+export default async function ChangelogRedirectPage() {
+  // If signed in, redirect to current user's changelog
+  const session = await getServerSession(authOptions);
+  if (session?.user?.id) {
+    const user = await db.user.findUnique({
+      where: { id: session.user.id },
+      select: { username: true },
     });
-    projectId = defaultProject?.id;
+    if (user?.username) {
+      redirect(`/changelog/${user.username}`);
+    }
   }
 
-  const changelogs = await db.changelog.findMany({
-    where: {
-      status: "published",
-      ...(projectId ? { projectId } : {}),
-    },
-    orderBy: { publishedAt: "desc" },
-    include: { project: true },
+  // Default: try the canonical Chamelelog author
+  const defaultUser = await db.user.findUnique({
+    where: { username: DEFAULT_USERNAME },
+    select: { username: true },
   });
+  if (defaultUser) {
+    redirect(`/changelog/${defaultUser.username}`);
+  }
 
-  const project = changelogs[0]?.project;
-  const repoName = project
-    ? `${project.repoOwner}/${project.repoName}`
-    : null;
+  // Fallback: first user with published changelogs
+  const firstChangelog = await db.changelog.findFirst({
+    where: { status: "published" },
+    orderBy: { publishedAt: "desc" },
+    select: { user: { select: { username: true } } },
+  });
+  if (firstChangelog?.user?.username) {
+    redirect(`/changelog/${firstChangelog.user.username}`);
+  }
 
+  // No published changelogs anywhere
   return (
-    <div className="mx-auto max-w-3xl px-8 pb-10">
-      <div className="sticky top-0 z-10 bg-background pt-10 pb-6">
-        <h1
-          className="font-display text-[28px] font-extrabold text-text-primary"
-          style={{ letterSpacing: "-0.5px" }}
-        >
-          Changelog
-        </h1>
-        {repoName && (
-          <p className="mt-1 text-sm text-text-secondary">
-            All notable changes to {repoName}
-          </p>
-        )}
-      </div>
-
-      {changelogs.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-24">
-          <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-border-primary bg-surface">
-            <FileText className="h-6 w-6 text-text-tertiary" />
-          </div>
-          <h2 className="mt-5 font-display text-lg font-semibold text-text-primary">
-            No published changelogs yet
-          </h2>
-          <p
-            className="mt-2 text-center text-sm text-text-secondary"
-            style={{ lineHeight: 1.5, maxWidth: 380 }}
-          >
-            Changelogs will appear here once they are published.
-          </p>
+    <div className="flex min-h-screen items-center justify-center">
+      <div className="flex flex-col items-center justify-center py-24">
+        <div className="flex h-14 w-14 items-center justify-center rounded-xl border border-border-primary bg-surface">
+          <FileText className="h-6 w-6 text-text-tertiary" />
         </div>
-      ) : (
-        <ChangelogFeed changelogs={changelogs} categoryFilter={category} />
-      )}
+        <h2 className="mt-5 font-display text-lg font-semibold text-text-primary">
+          No published changelogs yet
+        </h2>
+        <p
+          className="mt-2 text-center text-sm text-text-secondary"
+          style={{ lineHeight: 1.5, maxWidth: 380 }}
+        >
+          Changelogs will appear here once they are published.
+        </p>
+      </div>
     </div>
   );
 }
