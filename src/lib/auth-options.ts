@@ -32,12 +32,20 @@ export const authOptions: NextAuthOptions = {
           },
         });
 
-        // Store GitHub username
+        // Store GitHub username (use upsert — on first sign-in the
+        // adapter may not have created the user row yet)
         const login = (profile as { login?: string })?.login;
         if (login) {
-          await db.user.update({
+          await db.user.upsert({
             where: { id: user.id },
-            data: { username: login },
+            update: { username: login },
+            create: {
+              id: user.id,
+              name: user.name,
+              email: user.email,
+              image: user.image,
+              username: login,
+            },
           });
         }
       }
