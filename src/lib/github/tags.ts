@@ -1,4 +1,5 @@
 import { Octokit } from "octokit";
+import pLimit from "p-limit";
 
 export interface TagInfo {
   name: string;
@@ -18,39 +19,42 @@ export async function getRecentTags(
     per_page: limit,
   });
 
-  const tagInfos: TagInfo[] = [];
+  const concurrency = pLimit(10);
+  const tagInfos = await Promise.all(
+    tags.map((tag) =>
+      concurrency(async (): Promise<TagInfo> => {
+        let date: string;
 
-  for (const tag of tags) {
-    let date: string;
+        try {
+          // Try to get annotated tag info
+          const { data: gitTag } = await octokit.rest.git.getTag({
+            owner,
+            repo,
+            tag_sha: tag.commit.sha,
+          });
+          date = gitTag.tagger?.date ?? new Date().toISOString();
+        } catch {
+          // Lightweight tag — use the commit date instead
+          try {
+            const { data: commit } = await octokit.rest.repos.getCommit({
+              owner,
+              repo,
+              ref: tag.commit.sha,
+            });
+            date = commit.commit.author?.date ?? new Date().toISOString();
+          } catch {
+            date = new Date().toISOString();
+          }
+        }
 
-    try {
-      // Try to get annotated tag info
-      const { data: gitTag } = await octokit.rest.git.getTag({
-        owner,
-        repo,
-        tag_sha: tag.commit.sha,
-      });
-      date = gitTag.tagger?.date ?? new Date().toISOString();
-    } catch {
-      // Lightweight tag — use the commit date instead
-      try {
-        const { data: commit } = await octokit.rest.repos.getCommit({
-          owner,
-          repo,
-          ref: tag.commit.sha,
-        });
-        date = commit.commit.author?.date ?? new Date().toISOString();
-      } catch {
-        date = new Date().toISOString();
-      }
-    }
-
-    tagInfos.push({
-      name: tag.name,
-      sha: tag.commit.sha,
-      date,
-    });
-  }
+        return {
+          name: tag.name,
+          sha: tag.commit.sha,
+          date,
+        };
+      }),
+    ),
+  );
 
   // Sort by date descending
   tagInfos.sort(

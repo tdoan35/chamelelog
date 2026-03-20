@@ -63,19 +63,23 @@ export function useChangelogStream() {
           if (line.startsWith("event: ")) {
             eventType = line.slice(7);
           } else if (line.startsWith("data: ") && eventType) {
-            const data = JSON.parse(line.slice(6));
-            if (eventType === "status") setStatus(data.message);
-            if (eventType === "entry")
-              setEntries((prev) => [...prev, data]);
-            if (eventType === "complete") {
-              setChangelogId(data.changelogId);
-              setCompletionData({
-                changelogId: data.changelogId,
-                commitCount: data.commitCount,
-                filteredCount: data.filteredCount,
-              });
+            try {
+              const data = JSON.parse(line.slice(6));
+              if (eventType === "status") setStatus(data.message);
+              if (eventType === "entry")
+                setEntries((prev) => [...prev, data]);
+              if (eventType === "complete") {
+                setChangelogId(data.changelogId);
+                setCompletionData({
+                  changelogId: data.changelogId,
+                  commitCount: data.commitCount,
+                  filteredCount: data.filteredCount,
+                });
+              }
+              if (eventType === "error") setError(data.message);
+            } catch {
+              console.warn("Failed to parse SSE event:", line);
             }
-            if (eventType === "error") setError(data.message);
             eventType = "";
           }
         }

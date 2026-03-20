@@ -16,7 +16,7 @@ import {
   RefreshCw,
 } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
+import { cn, parseContent } from "@/lib/utils";
 import { CATEGORY_COLORS, CATEGORY_ORDER } from "@/lib/category-colors";
 import { contentToMarkdown, contentToJson } from "@/lib/markdown";
 import type { ChangelogEntry, ChangelogCategory } from "@/lib/types";
@@ -40,15 +40,6 @@ interface ChangelogData {
 
 interface ChangelogEditorProps {
   changelog: ChangelogData;
-}
-
-function parseContent(content: string): ChangelogCategory[] {
-  try {
-    const parsed = JSON.parse(content);
-    return parsed.categories ?? [];
-  } catch {
-    return [];
-  }
 }
 
 export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
@@ -136,12 +127,22 @@ export function ChangelogEditor({ changelog }: ChangelogEditorProps) {
     [save],
   );
 
-  // Cleanup timer on unmount
+  // Track latest values for flush on unmount
+  const latestRef = useRef({ categories, title, version });
+  useEffect(() => {
+    latestRef.current = { categories, title, version };
+  });
+
+  // Flush pending autosave on unmount
   useEffect(() => {
     return () => {
-      if (saveTimerRef.current) clearTimeout(saveTimerRef.current);
+      if (saveTimerRef.current) {
+        clearTimeout(saveTimerRef.current);
+        const { categories, title, version } = latestRef.current;
+        save(categories, title, version);
+      }
     };
-  }, []);
+  }, [save]);
 
   // Close move menu / tone menu on outside click
   useEffect(() => {

@@ -1,4 +1,5 @@
 import { Octokit } from "octokit";
+import pLimit from "p-limit";
 
 export interface CommitData {
   sha: string;
@@ -74,63 +75,87 @@ export async function fetchFilteredCommits(
   since: string,
   until: string,
 ): Promise<{ commits: CommitData[]; totalCount: number; capped: boolean }> {
-  // Fetch commit list
-  const { data: commitList } = await octokit.rest.repos.listCommits({
-    owner,
-    repo,
-    since,
-    until,
-    per_page: 100,
-  });
+  // Fetch commits, paginating until we have enough meaningful ones or exhaust the range.
+  // We keep fetching pages until we have MAX_COMMITS non-merge, non-noise commits
+  // or we run out of pages. Cap total API pages to avoid runaway pagination.
+  const MAX_PAGES = 5;
+  type CommitListItem = Awaited<ReturnType<typeof octokit.rest.repos.listCommits>>["data"][number];
+  const raw: CommitListItem[] = [];
+  const meaningful: CommitListItem[] = [];
+  let page = 1;
+  let hasMore = true;
 
-  const totalCount = commitList.length;
-  const capped = totalCount > MAX_COMMITS;
-  const toFetch = commitList.slice(0, MAX_COMMITS);
-
-  const commits: CommitData[] = [];
-
-  for (const item of toFetch) {
-    // Skip merge commits
-    if (isMergeCommit(item.parents)) continue;
-
-    // Skip noise messages
-    const message = item.commit.message.split("\n")[0]; // First line only
-    if (isNoiseCommit(message)) continue;
-
-    // Fetch full commit details
-    const { data: full } = await octokit.rest.repos.getCommit({
+  while (meaningful.length < MAX_COMMITS && hasMore && page <= MAX_PAGES) {
+    const { data: pageData } = await octokit.rest.repos.listCommits({
       owner,
       repo,
-      ref: item.sha,
+      since,
+      until,
+      per_page: 100,
+      page,
     });
 
-    const filesChanged: FileChange[] = (full.files ?? []).map((f) => ({
-      filename: f.filename,
-      status: f.status ?? "modified",
-      additions: f.additions,
-      deletions: f.deletions,
-      patch: f.patch ? f.patch.slice(0, 500) : undefined,
-    }));
+    raw.push(...pageData);
+    hasMore = pageData.length === 100;
 
-    // Skip if ALL files are ignorable
-    const nonIgnoredFiles = filesChanged.filter(
-      (f) => !shouldIgnoreFile(f.filename, f.patch),
-    );
-    if (filesChanged.length > 0 && nonIgnoredFiles.length === 0) continue;
+    for (const item of pageData) {
+      if (meaningful.length >= MAX_COMMITS) break;
+      if (isMergeCommit(item.parents)) continue;
+      const message = item.commit.message.split("\n")[0];
+      if (isNoiseCommit(message)) continue;
+      meaningful.push(item);
+    }
 
-    commits.push({
-      sha: item.sha,
-      message,
-      author:
-        item.commit.author?.name ??
-        item.author?.login ??
-        "Unknown",
-      date: item.commit.author?.date ?? new Date().toISOString(),
-      filesChanged,
-      additions: full.stats?.additions ?? 0,
-      deletions: full.stats?.deletions ?? 0,
-    });
+    page++;
   }
 
+  const totalCount = raw.length;
+  const capped = meaningful.length >= MAX_COMMITS || (hasMore && page > MAX_PAGES);
+
+  const toFetch = meaningful.slice(0, MAX_COMMITS);
+
+  // Fetch commit details concurrently with concurrency limit
+  const limit = pLimit(10);
+  const results = await Promise.all(
+    toFetch.map((item) =>
+      limit(async (): Promise<CommitData | null> => {
+        const { data: full } = await octokit.rest.repos.getCommit({
+          owner,
+          repo,
+          ref: item.sha,
+        });
+
+        const filesChanged: FileChange[] = (full.files ?? []).map((f) => ({
+          filename: f.filename,
+          status: f.status ?? "modified",
+          additions: f.additions,
+          deletions: f.deletions,
+          patch: f.patch ? f.patch.slice(0, 500) : undefined,
+        }));
+
+        // Skip if ALL files are ignorable
+        const nonIgnoredFiles = filesChanged.filter(
+          (f) => !shouldIgnoreFile(f.filename, f.patch),
+        );
+        if (filesChanged.length > 0 && nonIgnoredFiles.length === 0) return null;
+
+        const message = item.commit.message.split("\n")[0];
+        return {
+          sha: item.sha,
+          message,
+          author:
+            item.commit.author?.name ??
+            item.author?.login ??
+            "Unknown",
+          date: item.commit.author?.date ?? new Date().toISOString(),
+          filesChanged,
+          additions: full.stats?.additions ?? 0,
+          deletions: full.stats?.deletions ?? 0,
+        };
+      }),
+    ),
+  );
+
+  const commits = results.filter((c): c is CommitData => c !== null);
   return { commits, totalCount, capped };
 }

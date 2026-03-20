@@ -115,6 +115,7 @@ export async function POST(req: Request) {
             fromRef: body.fromRef,
             toRef: body.toRef,
             commitCount: result.commitCount,
+            commitData: JSON.stringify(result.commitSummary),
           },
         });
 

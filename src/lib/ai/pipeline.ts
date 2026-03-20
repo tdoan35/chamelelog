@@ -21,6 +21,7 @@ export interface PipelineResult {
   commitCount: number;
   filteredCount: number;
   classificationData: ClassificationResult;
+  commitSummary: Array<{ sha: string; message: string }>;
 }
 
 export type PipelineEvent =
@@ -117,6 +118,7 @@ export async function runPipeline(
     commitCount: commits.length,
     filteredCount,
     classificationData: classification,
+    commitSummary: commits.map((c) => ({ sha: c.sha, message: c.message })),
   };
 
   onEvent({ type: "complete", result });

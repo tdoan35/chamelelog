@@ -80,6 +80,7 @@ export default function GeneratePage() {
           setDatePreset(data.data.defaultDateRange ?? "last-release");
         }
       })
+      // Intentional silent fallback — preferences are optional; page works fine with defaults
       .catch(() => {});
   }, []);
 

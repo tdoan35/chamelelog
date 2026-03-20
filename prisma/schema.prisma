@@ -86,6 +86,7 @@ model Changelog {
   content            String    @default("{}") // JSON string: { features: [], improvements: [], fixes: [], breaking: [] }
   rawContent         String    @default("") // Rendered markdown
   classificationData String? // JSON string of Stage 2 output, used for tone regeneration
+  commitData         String? // JSON: [{sha, message}] for regeneration with original commits
   status             String    @default("draft") // draft | pending_review | published
   fromDate           DateTime
   toDate             DateTime
@@ -96,4 +97,6 @@ model Changelog {
   publishedAt        DateTime?
   createdAt          DateTime  @default(now())
   updatedAt          DateTime  @updatedAt
+
+  @@index([status, publishedAt])
 }

@@ -2,6 +2,8 @@ import { streamText, convertToModelMessages } from "ai";
 import { model } from "@/lib/ai-client";
 import { db } from "@/lib/db";
 
+const MAX_CONTEXT_CHARS = 30_000;
+
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
@@ -13,13 +15,18 @@ export async function POST(req: Request) {
     include: { project: true },
   });
 
-  const context = changelogs
-    .map((cl) => {
-      const date = cl.publishedAt?.toLocaleDateString() ?? "Unknown date";
-      const repo = `${cl.project.repoOwner}/${cl.project.repoName}`;
-      return `## ${cl.title} (${cl.version ?? "unversioned"}) — ${date} [${repo}]\n\n${cl.rawContent}`;
-    })
-    .join("\n\n---\n\n");
+  // Build context with a token budget to avoid overwhelming the model
+  const parts: string[] = [];
+  let charCount = 0;
+  for (const cl of changelogs) {
+    const date = cl.publishedAt?.toLocaleDateString() ?? "Unknown date";
+    const repo = `${cl.project.repoOwner}/${cl.project.repoName}`;
+    const part = `## ${cl.title} (${cl.version ?? "unversioned"}) — ${date} [${repo}]\n\n${cl.rawContent}`;
+    if (charCount + part.length > MAX_CONTEXT_CHARS) break;
+    parts.push(part);
+    charCount += part.length;
+  }
+  const context = parts.join("\n\n---\n\n");
 
   const result = streamText({
     model,

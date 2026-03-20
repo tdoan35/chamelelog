@@ -1,5 +1,5 @@
 import { CATEGORY_COLORS, CATEGORY_ORDER } from "@/lib/category-colors";
-import type { ChangelogCategory } from "@/lib/types";
+import { parseContent } from "@/lib/utils";
 import { CategoryHeader } from "@/components/public/category-header";
 import { ChangelogEntryCard } from "@/components/public/changelog-entry";
 
@@ -26,16 +26,6 @@ function formatDate(date: Date): string {
     month: "long",
     day: "numeric",
   });
-}
-
-function parseContent(content: string | null): ChangelogCategory[] {
-  if (!content) return [];
-  try {
-    const parsed = JSON.parse(content);
-    return parsed.categories ?? [];
-  } catch {
-    return [];
-  }
 }
 
 export function ChangelogFeed({

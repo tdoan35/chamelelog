@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { summarizeChanges } from "@/lib/ai/summarize";
 import { contentToJson, contentToMarkdown } from "@/lib/markdown";
 import type { ClassificationResult } from "@/lib/ai/classify";
+import type { CommitData } from "@/lib/github/commits";
 import type { ChangelogCategory } from "@/lib/types";
 
 const RegenerateSchema = z.object({
@@ -50,9 +51,21 @@ export async function POST(
     changelog.classificationData,
   );
 
-  // Re-run Stage 3 (summarization) with the new tone
-  // We don't have original commits, so pass empty array — summarize uses classification clusters
-  const summarized = await summarizeChanges(classification, [], parsed.data.tone);
+  // Restore commit data for richer summarization (sha + message used by formatClustersForSummarization)
+  const commitData: Array<{ sha: string; message: string }> =
+    changelog.commitData ? JSON.parse(changelog.commitData as string) : [];
+
+  const commits: CommitData[] = commitData.map((c) => ({
+    sha: c.sha,
+    message: c.message,
+    author: "",
+    date: "",
+    filesChanged: [],
+    additions: 0,
+    deletions: 0,
+  }));
+
+  const summarized = await summarizeChanges(classification, commits, parsed.data.tone);
 
   // Build categories
   const categoryMap = new Map<string, ChangelogCategory>();
