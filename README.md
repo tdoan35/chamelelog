@@ -2,6 +2,8 @@
 
 AI-powered changelog generation from Git commits. Adapts to any audience — just like a chameleon.
 
+**Live demo**: [chamelelog.vercel.app](https://chamelelog.vercel.app)
+
 ## Quick start
 
 ```bash
@@ -82,7 +84,7 @@ Auto:   Git tag push → POST /api/webhook (HMAC verified)
 
 - **Framework**: Next.js 16 (App Router)
 - **Language**: TypeScript
-- **Database**: SQLite via Prisma
+- **Database**: SQLite via Prisma (local), Turso/libSQL (production)
 - **Auth**: NextAuth.js + GitHub OAuth
 - **Styling**: Tailwind CSS v4 + shadcn/ui
 - **AI**: OpenRouter (Gemini 2.5 Flash Lite) via Vercel AI SDK v6
@@ -115,10 +117,18 @@ Auto:   Git tag push → POST /api/webhook (HMAC verified)
 To enable automatic changelog generation when you push a tag:
 
 1. In your GitHub repo → Settings → Webhooks → Add webhook
-2. **Payload URL**: `https://your-domain/api/webhook`
+2. **Payload URL**: `https://chamelelog.vercel.app/api/webhook`
 3. **Content type**: `application/json`
-4. **Secret**: your `GITHUB_WEBHOOK_SECRET` value
+4. **Secret**: `test-secret-123`
 5. **Events**: select "Branch or tag creation"
+
+When a tag is pushed, a changelog draft is auto-generated with "Pending review" status. Review and publish it from the dashboard.
+
+## Deployment
+
+Production runs on **Vercel** + **Turso** (hosted libSQL, SQLite-compatible). Local dev uses plain SQLite with zero config changes.
+
+See [docs/dev-ops/deployment.md](docs/dev-ops/deployment.md) for full setup instructions.
 
 ## Project structure
 
