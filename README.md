@@ -38,7 +38,7 @@ pnpm dev                      # Starts on http://localhost:3002
 
 ### 3-Stage AI Pipeline
 
-The core differentiator. Each stage has a single responsibility:
+Each stage has a single responsibility:
 
 | Stage | What it does | AI? |
 |-------|-------------|-----|
