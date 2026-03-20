@@ -3,6 +3,7 @@
 AI-powered changelog generation from Git commits. Adapts to any audience — just like a chameleon.
 
 **Live demo**: [chamelelog.vercel.app](https://chamelelog.vercel.app)
+
 **Public changelog**: [chamelelog.vercel.app/changelog](https://chamelelog.vercel.app/changelog)
 
 ## Quick start
