@@ -42,46 +42,49 @@ This endpoint:
 3. Streams a response using the Vercel AI SDK's `streamText`
 
 ```typescript
-import { streamText } from "ai";
+import { streamText, convertToModelMessages } from "ai";
 import { model } from "@/lib/ai-client";
 import { db } from "@/lib/db";
 
 export async function POST(req: Request) {
   const { messages } = await req.json();
 
-  // Load changelog context
   const changelogs = await db.changelog.findMany({
     where: { status: "published" },
     orderBy: { publishedAt: "desc" },
     take: 20,
+    include: { project: true },
   });
 
   const context = changelogs
-    .map((cl) => `[${cl.publishedAt?.toISOString().split("T")[0]}] ${cl.title}\n${cl.rawContent}`)
+    .map((cl) => {
+      const date = cl.publishedAt?.toLocaleDateString() ?? "Unknown date";
+      const repo = `${cl.project.repoOwner}/${cl.project.repoName}`;
+      return `## ${cl.title} (${cl.version ?? "unversioned"}) — ${date} [${repo}]\n\n${cl.rawContent}`;
+    })
     .join("\n\n---\n\n");
 
   const result = streamText({
     model,
-    system: `You are a helpful assistant that answers questions about a software project's changelog. Here are the recent changelog entries:\n\n${context}\n\nAnswer questions based ONLY on this changelog data. If the answer isn't in the changelogs, say so. Be concise.`,
-    messages,
+    system: `You are a helpful assistant for a software changelog. Answer questions about recent changes, releases, and features based on the following published changelogs. Be concise and friendly. If you don't know something, say so.\n\nPUBLISHED CHANGELOGS:\n${context}`,
+    messages: await convertToModelMessages(messages),
   });
 
-  return result.toDataStreamResponse();
+  return result.toUIMessageStreamResponse();
 }
 ```
 
-**Client-side**: Use the Vercel AI SDK's `useChat` hook for the chat interface:
+**Client-side**: Uses AI SDK v6's `useChat` hook from `@ai-sdk/react`. The v6 API uses `sendMessage({ text })` instead of the older `input`/`handleInputChange`/`handleSubmit` pattern:
 
 ```typescript
 "use client";
 
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 
 export function ChatWidget() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: "/api/chat",
-  });
-  // ... render UI
+  const { messages, sendMessage, status } = useChat();
+  const isLoading = status === "streaming" || status === "submitted";
+  // ... render UI, call sendMessage({ text: userInput }) on submit
 }
 ```
 
@@ -109,13 +112,18 @@ export async function POST(req: Request) {
   const body = await req.text();
   const signature = req.headers.get("x-hub-signature-256");
 
-  // Verify webhook signature
+  // Verify webhook signature (timing-safe comparison)
+  const secret = process.env.GITHUB_WEBHOOK_SECRET;
+  if (!secret) {
+    return Response.json({ error: "Webhook secret not configured" }, { status: 500 });
+  }
   const expected = `sha256=${crypto
-    .createHmac("sha256", process.env.GITHUB_WEBHOOK_SECRET!)
+    .createHmac("sha256", secret)
     .update(body)
     .digest("hex")}`;
-
-  if (signature !== expected) {
+  const sigBuf = Buffer.from(signature ?? "");
+  const expectedBuf = Buffer.from(expected);
+  if (sigBuf.length !== expectedBuf.length || !crypto.timingSafeEqual(sigBuf, expectedBuf)) {
     return Response.json({ error: "Invalid signature" }, { status: 401 });
   }
 

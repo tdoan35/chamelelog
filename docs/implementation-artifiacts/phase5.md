@@ -186,18 +186,17 @@ export async function POST(req: Request) {
 }
 ```
 
-**Client-side**: Use the Vercel AI SDK's `useChat` hook for the chat interface:
+**Client-side**: Uses AI SDK v6's `useChat` hook from `@ai-sdk/react`. The v6 API uses `sendMessage({ text })` instead of the older `input`/`handleInputChange`/`handleSubmit` pattern:
 
 ```typescript
 "use client";
 
-import { useChat } from "ai/react";
+import { useChat } from "@ai-sdk/react";
 
 export function ChatWidget() {
-  const { messages, input, handleInputChange, handleSubmit, isLoading } = useChat({
-    api: "/api/chat",
-  });
-  // ... render UI
+  const { messages, sendMessage, status } = useChat();
+  const isLoading = status === "streaming" || status === "submitted";
+  // ... render UI, call sendMessage({ text: userInput }) on submit
 }
 ```
 

@@ -42,11 +42,11 @@ The application has two user-facing surfaces backed by a shared backend:
  
 | Layer | Choice | Why |
 |---|---|---|
-| Framework | Next.js 14 (App Router) | Full-stack in one project. Server components for the public page, API routes for the backend, client components for the dashboard. No separate backend needed. |
+| Framework | Next.js 16 (App Router) | Full-stack in one project. Server components for the public page, API routes for the backend, client components for the dashboard. No separate backend needed. |
 | Language | TypeScript | Type safety across the full stack. Shared types between API and UI. |
 | Styling | Tailwind CSS + shadcn/ui | Tailwind for utility-first speed. shadcn/ui provides accessible, unstyled primitives that we own (copied into the project, not a dependency). Produces the clean, minimal aesthetic the project targets. |
 | Database | SQLite via Prisma | **Zero-config for the reviewer.** No Docker, no cloud DB, no connection string. `pnpm dev` just works. Prisma provides typed queries and makes swapping to Postgres a one-line change (`provider = "postgresql"` in schema.prisma). SQLite handles single-user workloads with no issues. |
-| AI | OpenRouter → Claude Sonnet | OpenRouter provides model flexibility while defaulting to Claude, which is Greptile's own AI provider (they use the Claude Agent SDK). The Vercel AI SDK (`ai` package) gives us streaming, structured output via `generateObject`, and SSE helpers out of the box. |
+| AI | OpenRouter → Gemini 2.5 Flash Lite | OpenRouter provides model flexibility. Currently uses `google/gemini-2.5-flash-lite` for fast, cost-effective structured output. The Vercel AI SDK v6 (`ai` + `@ai-sdk/react` packages) gives us streaming, structured output via `generateObject`, and UI message stream helpers out of the box. |
 | Auth | NextAuth.js + GitHub OAuth | GitHub OAuth is mandatory anyway — we need the user's access token to call the GitHub API for commits. NextAuth makes it a few lines of config. The Prisma adapter persists sessions in the same SQLite database. |
 | GitHub API | Octokit | Official GitHub SDK. Typed responses, pagination helpers, auth handling. |
 | Validation | Zod | Schema validation for API request bodies. Also used with `generateObject` from the AI SDK to enforce structured LLM output. |
@@ -85,26 +85,32 @@ User (GitHub identity)
  
 ### Key fields
  
-**Changelog.content** (JSON string): Structured representation used for rendering category-grouped views in the UI.
- 
+**Changelog.content** (JSON string): Structured representation used for rendering category-grouped views in the UI. Uses a `categories` array wrapper where each category contains its entries:
+
 ```json
 {
-  "features": [
+  "categories": [
     {
-      "title": "Added OAuth 2.0 support",
-      "description": "Users can now sign in with Google, GitHub, or email magic links.",
-      "commits": ["abc1234", "def5678"]
-    }
-  ],
-  "improvements": [],
-  "fixes": [
+      "category": "features",
+      "entries": [
+        {
+          "title": "Added OAuth 2.0 support",
+          "description": "Users can now sign in with Google, GitHub, or email magic links.",
+          "commitShas": ["abc1234", "def5678"]
+        }
+      ]
+    },
     {
-      "title": "Fixed session timeout on mobile browsers",
-      "description": null,
-      "commits": ["ghi9012"]
+      "category": "fixes",
+      "entries": [
+        {
+          "title": "Fixed session timeout on mobile browsers",
+          "description": null,
+          "commitShas": ["ghi9012"]
+        }
+      ]
     }
-  ],
-  "breaking": []
+  ]
 }
 ```
  
@@ -229,6 +235,7 @@ All API routes live under `src/app/api/`. Authentication is required for all rou
 | `PATCH` | `/api/changelogs/[id]` | Yes | Update title, content, rawContent, version. Used by autosave. |
 | `DELETE` | `/api/changelogs/[id]` | Yes | Delete a changelog. |
 | `POST` | `/api/changelogs/[id]/publish` | Yes | Set status to "published", set publishedAt. |
+| `POST` | `/api/changelogs/[id]/regenerate` | Yes | Re-run Stage 3 summarization with a different tone. Body: `{ tone: "technical" \| "product" \| "enterprise" }`. Uses cached `classificationData`. |
  
 ### Project management
  
@@ -244,7 +251,7 @@ All API routes live under `src/app/api/`. Authentication is required for all rou
 |---|---|---|---|
 | `GET` | `/api/feed/rss` | No | RSS 2.0 XML feed of published changelogs. Cached 1 hour. |
 | `GET` | `/api/feed/json` | No | JSON Feed 1.1 of published changelogs. Cached 1 hour. |
-| `POST` | `/api/chat` | No | AI chat endpoint for the public changelog widget. Accepts `{ messages }`. Returns streaming response. |
+| `POST` | `/api/chat` | No | AI chat endpoint for the public changelog widget. Accepts `{ messages }` (UI messages). Returns `toUIMessageStreamResponse()` for AI SDK v6 `useChat` compatibility. |
  
 ### Webhook
  
@@ -330,7 +337,7 @@ No global state library. State lives where it's used:
 - **Server components** fetch data directly via Prisma (no API call needed server-side)
 - **Generate form** uses local `useState` + the custom `useChangelogStream` hook
 - **Editor** uses local state with debounced autosave via `PATCH`
-- **Chat widget** uses Vercel AI SDK's `useChat` hook (manages message history internally)
+- **Chat widget** uses `@ai-sdk/react`'s `useChat` hook (AI SDK v6 — uses `sendMessage({ text })` API, manages message history internally)
  
 ### Key client-side patterns
  

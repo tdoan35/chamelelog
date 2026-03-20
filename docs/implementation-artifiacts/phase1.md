@@ -28,7 +28,7 @@ pnpm add -D prisma
 pnpm add next-auth @auth/prisma-adapter
 
 # AI (will be used in Phase 2, but install now)
-pnpm add ai @ai-sdk/openai
+pnpm add ai @ai-sdk/react @openrouter/ai-sdk-provider
 
 # GitHub API
 pnpm add octokit
@@ -340,15 +340,16 @@ OPENROUTER_API_KEY=""
 Create `src/lib/ai-client.ts` (placeholder for Phase 2):
 
 ```typescript
-import { createOpenAI } from "@ai-sdk/openai";
+import { createOpenRouter } from "@openrouter/ai-sdk-provider";
 
-export const openrouter = createOpenAI({
-  baseURL: "https://openrouter.ai/api/v1",
+const openrouter = createOpenRouter({
   apiKey: process.env.OPENROUTER_API_KEY!,
 });
 
-export const model = openrouter("anthropic/claude-sonnet-4-20250514");
+export const model = openrouter.chat("google/gemini-2.5-flash-lite");
 ```
+
+> **Actual implementation note**: Uses `@openrouter/ai-sdk-provider` (dedicated OpenRouter provider) instead of `@ai-sdk/openai` with a custom base URL. Model is `google/gemini-2.5-flash-lite` for fast, cost-effective structured output.
 
 ### 1.7 — Seed script
 
