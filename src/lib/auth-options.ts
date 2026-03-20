@@ -17,7 +17,7 @@ export const authOptions: NextAuthOptions = {
     }),
   ],
   callbacks: {
-    async signIn({ user, account }) {
+    async signIn({ user, account, profile }) {
       if (account && user.id) {
         await db.account.updateMany({
           where: {
@@ -31,6 +31,15 @@ export const authOptions: NextAuthOptions = {
             expires_at: account.expires_at,
           },
         });
+
+        // Store GitHub username
+        const login = (profile as { login?: string })?.login;
+        if (login) {
+          await db.user.update({
+            where: { id: user.id },
+            data: { username: login },
+          });
+        }
       }
       return true;
     },

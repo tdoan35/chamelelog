@@ -36,6 +36,7 @@ interface Project {
 
 interface ProjectSidebarProps {
   projects: Project[];
+  username: string;
 }
 
 const filterItems = [
@@ -46,16 +47,19 @@ const filterItems = [
   { label: "Breaking", category: "breaking" },
 ] as const;
 
-function buildHref(params: Record<string, string | null>): string {
+function buildHref(
+  username: string,
+  params: Record<string, string | null>
+): string {
   const sp = new URLSearchParams();
   for (const [key, value] of Object.entries(params)) {
     if (value) sp.set(key, value);
   }
   const qs = sp.toString();
-  return `/changelog${qs ? `?${qs}` : ""}`;
+  return `/changelog/${username}${qs ? `?${qs}` : ""}`;
 }
 
-export function ProjectSidebar({ projects }: ProjectSidebarProps) {
+export function ProjectSidebar({ projects, username }: ProjectSidebarProps) {
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category");
   const projectParam = searchParams.get("project");
@@ -87,9 +91,10 @@ export function ProjectSidebar({ projects }: ProjectSidebarProps) {
   const projectParamForUrls =
     hasMultipleProjects && activeProject ? activeProject.id : null;
 
-  const feedProjectParam = projectParamForUrls
-    ? `?project=${projectParamForUrls}`
-    : "";
+  const feedParams = new URLSearchParams();
+  feedParams.set("user", username);
+  if (projectParamForUrls) feedParams.set("project", projectParamForUrls);
+  const feedQueryString = `?${feedParams.toString()}`;
 
   return (
     <aside
@@ -135,7 +140,7 @@ export function ProjectSidebar({ projects }: ProjectSidebarProps) {
                 return (
                   <Link
                     key={p.id}
-                    href={buildHref({ project: p.id })}
+                    href={buildHref(username, { project: p.id })}
                     onClick={() => setPopoverOpen(false)}
                     className={cn(
                       "flex items-center justify-between rounded-md px-3 py-2 text-[13px] transition-colors",
@@ -209,7 +214,7 @@ export function ProjectSidebar({ projects }: ProjectSidebarProps) {
             </span>
           </a>
           <a
-            href={`/api/feed/rss${feedProjectParam}`}
+            href={`/api/feed/rss${feedQueryString}`}
             title={collapsed ? "RSS Feed" : undefined}
             className="flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-2.5 py-2 text-[13px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
           >
@@ -224,7 +229,7 @@ export function ProjectSidebar({ projects }: ProjectSidebarProps) {
             </span>
           </a>
           <a
-            href={`/api/feed/json${feedProjectParam}`}
+            href={`/api/feed/json${feedQueryString}`}
             title={collapsed ? "JSON Feed" : undefined}
             className="flex h-9 items-center gap-2 overflow-hidden whitespace-nowrap rounded-md px-2.5 py-2 text-[13px] text-text-secondary transition-colors hover:bg-surface-hover hover:text-text-primary"
           >
@@ -255,7 +260,7 @@ export function ProjectSidebar({ projects }: ProjectSidebarProps) {
               const isActive =
                 item.category === activeCategory ||
                 (item.category === null && !activeCategory);
-              const href = buildHref({
+              const href = buildHref(username, {
                 project: projectParamForUrls,
                 category: item.category,
               });

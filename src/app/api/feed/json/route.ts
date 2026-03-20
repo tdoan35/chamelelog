@@ -31,10 +31,22 @@ function categoriesToTags(content: string | null): string[] {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("project");
+  const username = searchParams.get("user");
+
+  // Resolve userId from username
+  let userId: string | undefined;
+  if (username) {
+    const user = await db.user.findUnique({ where: { username } });
+    if (!user) {
+      return Response.json({ error: "User not found" }, { status: 404 });
+    }
+    userId = user.id;
+  }
 
   const changelogs = await db.changelog.findMany({
     where: {
       status: "published",
+      ...(userId ? { userId } : {}),
       ...(projectId ? { projectId } : {}),
     },
     orderBy: { publishedAt: "desc" },
@@ -48,14 +60,20 @@ export async function GET(request: Request) {
     : "Chamelelog";
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const feedUrl = projectId
-    ? `${baseUrl}/api/feed/json?project=${encodeURIComponent(projectId)}`
-    : `${baseUrl}/api/feed/json`;
+  const changelogPath = username
+    ? `/changelog/${username}`
+    : "/changelog";
+
+  const feedParams = new URLSearchParams();
+  if (username) feedParams.set("user", username);
+  if (projectId) feedParams.set("project", projectId);
+  const feedQs = feedParams.toString();
+  const feedUrl = `${baseUrl}/api/feed/json${feedQs ? `?${feedQs}` : ""}`;
 
   const feed = {
     version: "https://jsonfeed.org/version/1.1",
     title: `${repoName} Changelog`,
-    home_page_url: `${baseUrl}/changelog`,
+    home_page_url: `${baseUrl}${changelogPath}`,
     feed_url: feedUrl,
     description: `Latest changes to ${repoName}`,
     items: changelogs.map((cl) => ({
@@ -65,7 +83,7 @@ export async function GET(request: Request) {
       date_published: cl.publishedAt
         ? new Date(cl.publishedAt).toISOString()
         : new Date(cl.createdAt).toISOString(),
-      url: `${baseUrl}/changelog`,
+      url: `${baseUrl}${changelogPath}`,
       tags: categoriesToTags(cl.content),
     })),
   };

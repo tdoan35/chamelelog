@@ -29,10 +29,22 @@ function categoriesToText(content: string | null): string {
 export async function GET(request: Request) {
   const { searchParams } = new URL(request.url);
   const projectId = searchParams.get("project");
+  const username = searchParams.get("user");
+
+  // Resolve userId from username
+  let userId: string | undefined;
+  if (username) {
+    const user = await db.user.findUnique({ where: { username } });
+    if (!user) {
+      return new Response("User not found", { status: 404 });
+    }
+    userId = user.id;
+  }
 
   const changelogs = await db.changelog.findMany({
     where: {
       status: "published",
+      ...(userId ? { userId } : {}),
       ...(projectId ? { projectId } : {}),
     },
     orderBy: { publishedAt: "desc" },
@@ -46,9 +58,15 @@ export async function GET(request: Request) {
     : "Chamelelog";
 
   const baseUrl = process.env.NEXTAUTH_URL ?? "http://localhost:3000";
-  const selfUrl = projectId
-    ? `${baseUrl}/api/feed/rss?project=${encodeURIComponent(projectId)}`
-    : `${baseUrl}/api/feed/rss`;
+  const changelogPath = username
+    ? `/changelog/${username}`
+    : "/changelog";
+
+  const selfParams = new URLSearchParams();
+  if (username) selfParams.set("user", username);
+  if (projectId) selfParams.set("project", projectId);
+  const selfQs = selfParams.toString();
+  const selfUrl = `${baseUrl}/api/feed/rss${selfQs ? `?${selfQs}` : ""}`;
 
   const items = changelogs
     .map((cl) => {
@@ -61,7 +79,7 @@ export async function GET(request: Request) {
       return `    <item>
       <title>${escapeXml(title)}</title>
       <description>${escapeXml(description)}</description>
-      <link>${escapeXml(`${baseUrl}/changelog`)}</link>
+      <link>${escapeXml(`${baseUrl}${changelogPath}`)}</link>
       <guid isPermaLink="false">${escapeXml(cl.id)}</guid>
       <pubDate>${pubDate}</pubDate>
     </item>`;
@@ -72,7 +90,7 @@ export async function GET(request: Request) {
 <rss version="2.0" xmlns:atom="http://www.w3.org/2005/Atom">
   <channel>
     <title>${escapeXml(repoName)} Changelog</title>
-    <link>${escapeXml(`${baseUrl}/changelog`)}</link>
+    <link>${escapeXml(`${baseUrl}${changelogPath}`)}</link>
     <description>Latest changes to ${escapeXml(repoName)}</description>
     <atom:link href="${escapeXml(selfUrl)}" rel="self" type="application/rss+xml" />
 ${items}
