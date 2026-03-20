@@ -130,6 +130,13 @@ Production runs on **Vercel** + **Turso** (hosted libSQL, SQLite-compatible). Lo
 
 See [docs/dev-ops/deployment.md](docs/dev-ops/deployment.md) for full setup instructions.
 
+## AI tools used
+
+- [Claude Code](https://docs.anthropic.com/en/docs/claude-code) — primary development tool (implementation, debugging, deployment)
+- [Claude Desktop](https://claude.ai) — planning, architecture decisions, and research
+- [Opencode](https://opencode.ai) — supplementary AI-assisted development
+- [Pencil.dev](https://pencil.dev) — design spec and UI mockups
+
 ## Project structure
 
 ```
