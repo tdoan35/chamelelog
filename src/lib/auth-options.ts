@@ -16,41 +16,35 @@ export const authOptions: NextAuthOptions = {
       },
     }),
   ],
-  callbacks: {
+  events: {
     async signIn({ user, account, profile }) {
-      if (account && user.id) {
-        await db.account.updateMany({
-          where: {
-            userId: user.id,
-            provider: account.provider,
-            providerAccountId: account.providerAccountId,
-          },
-          data: {
-            access_token: account.access_token,
-            refresh_token: account.refresh_token,
-            expires_at: account.expires_at,
-          },
-        });
+      if (!account || !user.id) return;
 
-        // Store GitHub username (use upsert — on first sign-in the
-        // adapter may not have created the user row yet)
-        const login = (profile as { login?: string })?.login;
-        if (login) {
-          await db.user.upsert({
-            where: { id: user.id },
-            update: { username: login },
-            create: {
-              id: user.id,
-              name: user.name,
-              email: user.email,
-              image: user.image,
-              username: login,
-            },
-          });
-        }
+      // Refresh OAuth tokens
+      await db.account.updateMany({
+        where: {
+          userId: user.id,
+          provider: account.provider,
+          providerAccountId: account.providerAccountId,
+        },
+        data: {
+          access_token: account.access_token,
+          refresh_token: account.refresh_token,
+          expires_at: account.expires_at,
+        },
+      });
+
+      // Store GitHub username
+      const login = (profile as { login?: string })?.login;
+      if (login) {
+        await db.user.update({
+          where: { id: user.id },
+          data: { username: login },
+        });
       }
-      return true;
     },
+  },
+  callbacks: {
     async session({ session, user }) {
       if (session.user) {
         session.user.id = user.id;
