@@ -34,8 +34,19 @@ export const authOptions: NextAuthOptions = {
         },
       });
 
-      // Store GitHub username
-      const login = (profile as { login?: string })?.login;
+      // Store GitHub username from profile or by fetching from GitHub API
+      let login = (profile as { login?: string })?.login;
+      if (!login && account.access_token) {
+        try {
+          const res = await fetch("https://api.github.com/user", {
+            headers: { Authorization: `Bearer ${account.access_token}` },
+          });
+          const gh = await res.json();
+          login = gh.login;
+        } catch {
+          // Silently continue — username will be set on next sign-in
+        }
+      }
       if (login) {
         await db.user.update({
           where: { id: user.id },
