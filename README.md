@@ -70,6 +70,29 @@ Auto:   Git tag push → POST /api/webhook (HMAC verified)
         → Pipeline runs → Saved as "pending_review" draft → Edit → Publish
 ```
 
+## Design decisions
+
+**Why a 3-stage pipeline instead of a single prompt?**
+Changelogs look simple but the underlying task has distinct concerns: fetching and filtering noise, categorizing what changed, and writing for a specific audience. A single LLM call conflates all three — if you want to change the tone from "Technical" to "Enterprise," you'd have to re-fetch and re-classify everything. Splitting stages means tone regeneration only re-runs Stage 3, which is faster and cheaper. It also makes each stage independently testable and debuggable.
+
+**Why OpenRouter + Gemini 2.5 Flash Lite?**
+OpenRouter gives model flexibility without vendor lock-in — swapping to a different model is a one-line config change. Gemini 2.5 Flash Lite was chosen for the best balance of speed, cost, and structured output quality for this use case. Changelogs don't need frontier-model reasoning; they need fast, reliable categorization and clean prose.
+
+**Why SQLite locally, Turso in production?**
+For a take-home project, zero-config setup matters. SQLite means `pnpm db:push` and you're running — no Docker, no Postgres connection string, no cloud account. Turso (hosted libSQL) gives the same SQLite compatibility in production with zero migration pain. Prisma abstracts the difference.
+
+**Why SSE streaming instead of a simple POST → response?**
+Changelog generation can take 10-15 seconds for repos with many commits. A loading spinner for that long feels broken. Streaming entries as they're generated gives immediate feedback — the user sees progress and can start reading before the pipeline finishes.
+
+**Why tone/audience switching?**
+Different stakeholders read changelogs differently. An engineer wants to know what endpoint changed; a product manager wants to know what users can now do; an enterprise buyer wants to know about security and compliance. Tone switching lets one set of commits produce changelogs for each audience without re-running the full pipeline.
+
+**Why a webhook for auto-generation?**
+The biggest friction in changelog maintenance is remembering to write one. A webhook on tag push removes that friction entirely — tag a release and a draft appears in the dashboard, ready for review. It's saved as "pending review" rather than auto-published because human review is still important for public-facing content.
+
+**Why an AI chat widget on the public page?**
+Changelogs are often scanned, not read. A chat widget lets end-users ask targeted questions ("Did anything change with the auth API?") without scrolling through entries. It also demonstrates the product thinking beyond the basic spec — treating the public page as more than a static list.
+
 ## Scripts
 
 | Command | Description |
